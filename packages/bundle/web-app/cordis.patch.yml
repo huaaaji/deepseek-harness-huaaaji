@@ -147,6 +147,10 @@
     - id: workspace-controller
       name: '@deepseek-ai/dsh-api-workspace-controller'
 
+    # Read-only git working-tree snapshots for the sidebar status widget.
+    - id: git-status
+      name: '@deepseek-ai/dsh-host-git-status'
+
     - id: cordis-host-runner
       name: '@deepseek-ai/dsh-cordis-host-runner'
 
@@ -327,6 +331,10 @@
 
     - id: ui-cordis
       name: '@deepseek-ai/dsh-client-ui-cordis'
+
+    # Sidebar git-status widget over the git-status Host Remote.
+    - id: ui-git-status
+      name: '@deepseek-ai/dsh-client-ui-git-status'
 
     # Turn tail: the changed-files card and delivery cards under each closing
     # assistant message. Remove this entry to turn the surface off; the tail

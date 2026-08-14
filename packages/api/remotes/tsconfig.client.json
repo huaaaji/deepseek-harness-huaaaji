@@ -49,6 +49,9 @@
       "path": "../../host/plugin-inventory"
     },
     {
+      "path": "../../host/git-status"
+    },
+    {
       "path": "../../interaction/commands"
     },
     {
