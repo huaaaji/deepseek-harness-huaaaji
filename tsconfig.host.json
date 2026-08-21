@@ -468,6 +468,7 @@
     { "path": "./packages/host/plugin-inventory" },
     { "path": "./packages/boot/plugin-manager" },
     { "path": "./packages/host/git-status" },
+    { "path": "./packages/host/file-viewer" },
     { "path": "./packages/llm/plugin-package-inventory-deepseek" },
     { "path": "./packages/host/webserver" },
     { "path": "./packages/sdk/client" },

@@ -151,6 +151,10 @@
     - id: git-status
       name: '@deepseek-ai/dsh-host-git-status'
 
+    # Read-only file/directory reads for the file-viewer drawer.
+    - id: file-viewer
+      name: '@deepseek-ai/dsh-host-file-viewer'
+
     - id: cordis-host-runner
       name: '@deepseek-ai/dsh-cordis-host-runner'
 
@@ -335,6 +339,10 @@
     # Sidebar git-status widget over the git-status Host Remote.
     - id: ui-git-status
       name: '@deepseek-ai/dsh-client-ui-git-status'
+
+    # Right-docked file viewer over the file-viewer Host Remote.
+    - id: ui-file-viewer
+      name: '@deepseek-ai/dsh-client-ui-file-viewer'
 
     # Turn tail: the changed-files card and delivery cards under each closing
     # assistant message. Remove this entry to turn the surface off; the tail
