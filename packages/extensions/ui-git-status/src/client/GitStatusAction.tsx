@@ -57,7 +57,6 @@ export function GitStatusAction({
 }: GitStatusActionProps): ReactNode {
   const detailsId = useId()
   const workspaces = useWorkspaces(state => state.items)
-  const recentWorkspaceId = useWorkspaces(state => state.recentWorkspaceId)
   const currentSession = useSessions(state => state.current)
   const [load, setLoad] = useState<LoadState>({ status: 'idle' })
   const [open, setOpen] = useState(false)
@@ -65,8 +64,8 @@ export function GitStatusAction({
   const [tab, setTab] = useState<'status' | 'history'>('status')
 
   const cwd = useMemo(
-    () => resolveCwd(workspaces, recentWorkspaceId, currentSession),
-    [workspaces, recentWorkspaceId, currentSession],
+    () => resolveCwd(workspaces, undefined, currentSession),
+    [workspaces, currentSession],
   )
 
   // Fetch a snapshot whenever the target or the retry counter changes.

@@ -52,12 +52,11 @@ export function FileViewerDrawer({
 }: FileViewerDrawerProps): ReactNode {
   const open = useStore(state => state.open)
   const workspaces = useWorkspaces(state => state.items)
-  const recentWorkspaceId = useWorkspaces(state => state.recentWorkspaceId)
   const currentSession = useSessions(state => state.current)
 
   const root = useMemo(
-    () => resolveCwd(workspaces, recentWorkspaceId, currentSession),
-    [workspaces, recentWorkspaceId, currentSession],
+    () => resolveCwd(workspaces, undefined, currentSession),
+    [workspaces, currentSession],
   )
 
   const [dir, setDir] = useState<string | null>(null)
@@ -226,7 +225,10 @@ function DocView({ doc, t }: { doc: Doc; t: Translate }): ReactNode {
   if (result.lines.length === 0) return <p className={css.status}>{t('file.empty')}</p>
   if (isMarkdown(path)) {
     const text = result.lines.map(line => line.text).join('\n')
-    return <div className={css.markdown}><MarkdownText text={text} /></div>
+    return <div className={css.markdown}><MarkdownText text={text} labels={{
+      code: { copyLabel: t('markdown.copyLabel'), copiedLabel: t('markdown.copiedLabel') },
+      footnotes: t('markdown.footnotes'),
+    }} /></div>
   }
   return (
     <ReadBlock
@@ -234,6 +236,15 @@ function DocView({ doc, t }: { doc: Doc; t: Translate }): ReactNode {
       lines={result.lines}
       totalLines={result.totalLines}
       lang={result.language ?? undefined}
+      labels={{
+        window: (shown, total) => t('read.window', { shown, total }),
+        copy: t('read.copy'),
+        copied: t('read.copied'),
+        collapseAria: t('read.collapseAria'),
+        expandAria: count => t('read.expandAria', { count }),
+        collapse: t('read.collapse'),
+        expand: count => t('read.expandRest', { count }),
+      }}
     />
   )
 }

@@ -65,6 +65,14 @@ export const zh = {
   'time.hours': '{value} 小时前',
   'time.days': '{value} 天前',
   'time.date': '{value}',
+  'diff.copy': '复制',
+  'diff.copied': '已复制',
+  'diff.collapseAria': '折叠差异',
+  'diff.expandAria': '展开差异',
+  'diff.collapse': '折叠',
+  'diff.expandRest': '展开剩余 {count} 行',
+  'diff.files.one': '{count} 个文件',
+  'diff.files.other': '{count} 个文件',
 } satisfies Record<string, string>
 
 /** Translation keys owned by the git-status UI namespace. */
@@ -140,4 +148,12 @@ export const en = {
   'time.hours': '{value} h ago',
   'time.days': '{value} d ago',
   'time.date': '{value}',
+  'diff.copy': 'Copy',
+  'diff.copied': 'Copied',
+  'diff.collapseAria': 'Collapse diff',
+  'diff.expandAria': 'Expand diff',
+  'diff.collapse': 'Collapse',
+  'diff.expandRest': 'Expand {count} more lines',
+  'diff.files.one': '{count} file',
+  'diff.files.other': '{count} files',
 } satisfies Record<string, string>

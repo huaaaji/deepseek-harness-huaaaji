@@ -3,7 +3,14 @@ import type { SessionId, WorkspaceId, WorkspaceView } from '@deepseek-ai/dsh-api
 import { formatSize, isMarkdown, joinPath, parentOf, resolveCwd } from '../src/client/model.ts'
 
 function ws(workspaceId: string, path: string, sessionIds: readonly string[]): WorkspaceView {
-  return { workspaceId: workspaceId as WorkspaceId, path, sessionIds: sessionIds as SessionId[] } as WorkspaceView
+  return {
+    workspaceId: workspaceId as WorkspaceId,
+    path,
+    title: workspaceId,
+    sessionIds: sessionIds as SessionId[],
+    createdAt: '2026-01-01T00:00:00Z',
+    updatedAt: '2026-01-01T00:00:00Z',
+  }
 }
 
 describe('resolveCwd', () => {

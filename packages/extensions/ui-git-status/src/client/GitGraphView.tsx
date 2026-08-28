@@ -464,6 +464,15 @@ function DetailsPanel({
                       <DiffBlock
                         diffs={[{ path: diff.path, oldText: diff.oldText, newText: diff.newText ?? '' }]}
                         maxLines={40}
+                        labels={{
+                          copy: t('diff.copy'),
+                          copied: t('diff.copied'),
+                          collapseAria: t('diff.collapseAria'),
+                          expandAria: count => t('diff.expandAria', { count }),
+                          collapse: t('diff.collapse'),
+                          expand: count => t('diff.expandRest', { count }),
+                          files: count => t(count === 1 ? 'diff.files.one' : 'diff.files.other', { count }),
+                        }}
                       />
                     ) : null}
                   </div>

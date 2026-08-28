@@ -24,6 +24,16 @@ export const zh = {
   'failure.sandbox-denied': '被沙箱拒绝',
   'failure.io-error': '读取失败',
   'failure.aborted': '读取被取消',
+  'markdown.copyLabel': '复制代码',
+  'markdown.copiedLabel': '已复制',
+  'markdown.footnotes': '脚注',
+  'read.window': '{shown}/{total}',
+  'read.copy': '复制',
+  'read.copied': '已复制',
+  'read.collapseAria': '折叠内容',
+  'read.expandAria': '展开内容',
+  'read.collapse': '折叠',
+  'read.expandRest': '展开剩余 {count} 行',
 } satisfies Record<string, string>
 
 /** Translation keys owned by the file-viewer UI namespace. */
@@ -60,4 +70,14 @@ export const en = {
   'failure.sandbox-denied': 'Blocked by sandbox',
   'failure.io-error': 'Read failed',
   'failure.aborted': 'Read aborted',
+  'markdown.copyLabel': 'Copy code',
+  'markdown.copiedLabel': 'Copied',
+  'markdown.footnotes': 'Footnotes',
+  'read.window': '{shown}/{total}',
+  'read.copy': 'Copy',
+  'read.copied': 'Copied',
+  'read.collapseAria': 'Collapse content',
+  'read.expandAria': 'Expand content',
+  'read.collapse': 'Collapse',
+  'read.expandRest': 'Expand {count} more lines',
 } satisfies Record<string, string>
