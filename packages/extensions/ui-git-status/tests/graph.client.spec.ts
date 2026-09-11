@@ -60,6 +60,12 @@ describe('buildGraph', () => {
     ])
     // The fork point feeds both lines: the base row inherits the main color.
     expect(base?.color).toBe(merge?.color)
+    // Branch names follow the lanes: the main line and its fork point carry
+    // `main`; the merged line carries `feature`.
+    expect(merge?.branchName).toBe('main')
+    expect(main2?.branchName).toBe('main')
+    expect(base?.branchName).toBe('main')
+    expect(feat?.branchName).toBe('feature')
   })
 
   it('inherits the first child color for unrefined commits', () => {
@@ -70,11 +76,14 @@ describe('buildGraph', () => {
     ])
     expect(rows[0]?.color).toBe(rows[1]?.color)
     expect(rows[1]?.color).toBe(rows[2]?.color)
+    expect(rows[1]?.branchName).toBe('main')
+    expect(rows[2]?.branchName).toBe('main')
   })
 
   it('gives a root window commit without refs an anonymous color', () => {
     const rows = buildGraph([commit('orphan', [])])
     expect(rows[0]?.color).toBe(0)
+    expect(rows[0]?.branchName).toBeNull()
     expect(rows[0]?.edges).toEqual([])
   })
 

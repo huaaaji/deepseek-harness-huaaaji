@@ -140,6 +140,10 @@ export interface GitCommitDetails {
   /** Full commit message body, including the subject line. */
   readonly message: string
   readonly files: readonly GitCommitFileStat[]
+  /** Local branches whose history contains this commit. */
+  readonly localBranches: readonly string[]
+  /** Remote branches whose history contains this commit. */
+  readonly remoteBranches: readonly string[]
 }
 
 /** Remote request: one commit's details and file statistics. */

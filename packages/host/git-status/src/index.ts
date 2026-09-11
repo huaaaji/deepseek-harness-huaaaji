@@ -10,8 +10,8 @@ import {
   type CommandOutcome,
 } from './git.ts'
 import {
-  GIT_DIFF_BYTES_LIMIT, GIT_HISTORY_LIMIT, historyArgs, parseHistoryLog, parseNumstat,
-  parseRefs, validBranchName,
+  GIT_DIFF_BYTES_LIMIT, GIT_HISTORY_LIMIT, historyArgs, parseBranchList, parseHistoryLog,
+  parseNumstat, parseRefs, validBranchName,
 } from './history.ts'
 import type {
   GitCheckoutRequest, GitCommitDetails, GitCommitDetailsRequest, GitCommitDetailsResult,
@@ -222,7 +222,14 @@ async function commitDetailsOf(cwd: string, hash: string): Promise<GitCommitDeta
   if (failedOutcome(filesOutcome)) {
     return { details: null, failure: failureOf(filesOutcome, `git show failed in ${cwd}`, 'git-error') }
   }
-  const details = parseCommitDetails(metaOutcome.stdout, parseNumstat(filesOutcome.stdout))
+  const localOutcome = await runGit(['branch', '--contains', hash], cwd)
+  const remoteOutcome = await runGit(['branch', '--remotes', '--contains', hash], cwd)
+  const details = parseCommitDetails(
+    metaOutcome.stdout,
+    parseNumstat(filesOutcome.stdout),
+    parseContainingBranches(localOutcome),
+    parseContainingBranches(remoteOutcome),
+  )
   /* v8 ignore next -- a successful git log always prints the fixed field layout; the null arm answers malformed output defensively. */
   if (details === null) {
     return { details: null, failure: { code: 'git-error', message: `无法解析提交 ${hash}` } }
@@ -230,10 +237,20 @@ async function commitDetailsOf(cwd: string, hash: string): Promise<GitCommitDeta
   return { details, failure: null }
 }
 
+/** Containing-branch lists are best-effort: the hash was already validated by
+ * the metadata read, so a failed listing degrades to an empty list. */
+function parseContainingBranches(outcome: CommandOutcome): readonly string[] {
+  /* v8 ignore next -- the metadata read already proved the repository and hash valid; this arm is defensive. */
+  if (failedOutcome(outcome)) return []
+  return parseBranchList(outcome.stdout)
+}
+
 /** Parse the metadata half of a commit-details read into the wire shape. */
 function parseCommitDetails(
   output: string,
   files: GitCommitDetails['files'],
+  localBranches: readonly string[],
+  remoteBranches: readonly string[],
 ): GitCommitDetails | null {
   const fields = output.split('\x1f', 9)
   /* v8 ignore next -- the format string always emits nine fields; the guard answers malformed output defensively. */
@@ -253,6 +270,8 @@ function parseCommitDetails(
     committerDate,
     message: message.trimEnd(),
     files,
+    localBranches,
+    remoteBranches,
   }
 }
 

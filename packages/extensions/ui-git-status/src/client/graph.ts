@@ -24,6 +24,10 @@ export interface GraphRow {
   readonly lane: number
   /** Palette index of this commit's branch color. */
   readonly color: number
+  /** The named branch this row's lane belongs to, or null for an anonymous
+   * line (commits reachable from no ref). Matches the wire branch names, so
+   * the details panel can highlight the graph-owned chip. */
+  readonly branchName: string | null
   /** Connectors to parents inside the window, in git parent order. */
   readonly edges: readonly GraphEdge[]
   /** 0-based row index within the laid-out window. */
@@ -150,6 +154,7 @@ export function buildGraph(commits: readonly GitCommitView[]): readonly GraphRow
       commit,
       lane,
       color: branchColor.get(branch) ?? 0,
+      branchName: branch.startsWith('ref:') ? branch.slice('ref:'.length) : null,
       row: index,
       edges: [],
     })
@@ -235,6 +240,7 @@ interface MutableRow {
   readonly commit: GitCommitView
   readonly lane: number
   readonly color: number
+  readonly branchName: string | null
   readonly row: number
   edges: GraphEdge[]
 }

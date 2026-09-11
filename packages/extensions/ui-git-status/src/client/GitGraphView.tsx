@@ -261,6 +261,7 @@ export function GitGraphView({
           {selectedCommit !== undefined ? (
             <DetailsPanel
               commit={selectedCommit}
+              laneBranch={selectedRow?.branchName ?? null}
               details={details}
               detailsPhase={detailsPhase}
               diff={diff}
@@ -360,13 +361,52 @@ function RefChip({
   )
 }
 
+/** The containing-branches row of the details panel. The arrays are new wire
+ * fields: against a stale payload (mixed host/bundle deployment or an old
+ * browser cache) they can be missing, so every access defaults to an empty
+ * list — a render crash here would blank the whole sidebar action via the
+ * slot error boundary. */
+function renderBranchRow(
+  details: GitCommitDetails | null,
+  laneBranch: string | null,
+  t: (key: GitStatusLocaleKey, params?: Record<string, unknown>) => string,
+): ReactNode {
+  if (details === null) return null
+  // The arrays are new wire fields: against a stale payload (mixed host/bundle
+  // deployment or an old browser cache) they can be missing, so default them.
+  const local = (details.localBranches as readonly string[] | undefined) ?? []
+  const remote = (details.remoteBranches as readonly string[] | undefined) ?? []
+  if (local.length + remote.length === 0) return null
+  const chip = (name: string, kind: 'branch' | 'remote'): ReactNode => (
+    <span
+      key={`${kind}-${name}`}
+      className={css.refChip}
+      data-kind={kind}
+      data-active={laneBranch !== null && name === laneBranch ? 'true' : undefined}
+      title={laneBranch !== null && name === laneBranch ? t('history.owningBranch') : undefined}
+    >
+      <IconBranchOutline16 size={10} aria-hidden="true" />
+      {name}
+    </span>
+  )
+  return (
+    <div className={css.panelBranches}>
+      <span className={css.branchesLabel}>{t('history.containingBranches')}</span>
+      {local.map(name => chip(name, 'branch'))}
+      {remote.map(name => chip(name, 'remote'))}
+    </div>
+  )
+}
+
 /** The right-hand panel: message, files, diffs, and actions for the selection. */
 function DetailsPanel({
-  commit, details, detailsPhase, diff, diffPath, diffPhase, busy, branchName,
+  commit, laneBranch, details, detailsPhase, diff, diffPath, diffPhase, busy, branchName,
   mutationError, setBranchName, onOpenDiff, onCheckoutCommit, onCreateBranch,
   onRetryDetails, t,
 }: {
   commit: GitCommitView
+  /** The branch this commit's graph lane belongs to (the highlighted chip). */
+  laneBranch: string | null
   details: GitCommitDetails | null
   detailsPhase: 'idle' | 'loading' | 'error'
   diff: GitFileDiffResult | null
@@ -390,6 +430,7 @@ function DetailsPanel({
         <span>{commit.authorDate}</span>
         <span className={css.hash}>{commit.hash}</span>
       </p>
+      {renderBranchRow(details, laneBranch, t)}
       <div className={css.panelActions}>
         <button type="button" className={css.action} onClick={onCheckoutCommit} disabled={busy}>
           {busy ? t('history.mutating') : t('history.checkoutCommit')}
@@ -424,67 +465,94 @@ function DetailsPanel({
         </div>
       ) : null}
       {details !== null ? (
-        <>
-          {details.message.length > 0 ? (
-            <pre className={css.message}>{details.message}</pre>
-          ) : null}
-          <p className={css.filesHeading}>{t('history.files', { count: details.files.length })}</p>
-          <ul className={css.fileList}>
-            {details.files.map(file => (
-              <li key={`${file.path}:${file.oldPath ?? ''}`}>
-                <button
-                  type="button"
-                  className={css.fileRow}
-                  data-open={diffPath === file.path ? 'true' : undefined}
-                  onClick={() => { onOpenDiff(file.path, file.oldPath) }}
-                >
-                  <span className={css.fileStats}>
-                    {file.added === null || file.removed === null
-                      ? t('history.binary')
-                      : `+${file.added} -${file.removed}`}
-                  </span>
-                  <span className={css.filePath}>{file.path}</span>
-                  {file.oldPath !== null ? (
-                    <span className={css.fileOldPath}>{t('history.renamed', { oldPath: file.oldPath })}</span>
-                  ) : null}
-                </button>
-                {diffPath === file.path && diffPhase === 'loading' ? (
-                  <p className={css.status}>{t('history.loading')}</p>
-                ) : null}
-                {diffPath === file.path && diffPhase === 'error' ? (
-                  <p className={css.status} role="alert">{t('history.diffFailed')}</p>
-                ) : null}
-                {diffPath === file.path && diff !== null && diff.failure === null ? (
-                  <div className={css.diffArea}>
-                    {diff.binary ? <p className={css.status}>{t('history.binary')}</p> : null}
-                    {diff.truncated ? (
-                      <p className={css.status}>{t('history.truncatedDiff', { limit: 64 })}</p>
-                    ) : null}
-                    {!diff.binary ? (
-                      <DiffBlock
-                        diffs={[{ path: diff.path, oldText: diff.oldText, newText: diff.newText ?? '' }]}
-                        maxLines={40}
-                        labels={{
-                          copy: t('diff.copy'),
-                          copied: t('diff.copied'),
-                          collapseAria: t('diff.collapseAria'),
-                          expandAria: count => t('diff.expandAria', { count }),
-                          collapse: t('diff.collapse'),
-                          expand: count => t('diff.expandRest', { count }),
-                          files: count => t(count === 1 ? 'diff.files.one' : 'diff.files.other', { count }),
-                        }}
-                      />
-                    ) : null}
-                  </div>
-                ) : null}
-                {diffPath === file.path && diff !== null && diff.failure !== null ? (
-                  <p className={css.status} role="alert">{diff.failure.message}</p>
-                ) : null}
-              </li>
-            ))}
-          </ul>
-        </>
+        <DetailsFiles
+          details={details}
+          diff={diff}
+          diffPath={diffPath}
+          diffPhase={diffPhase}
+          onOpenDiff={onOpenDiff}
+          t={t}
+        />
       ) : null}
     </div>
+  )
+}
+
+/** The message + changed-files block of the details panel. `files` is treated
+ * as possibly missing (stale payload) so a crash here cannot blank the widget. */
+function DetailsFiles({
+  details, diff, diffPath, diffPhase, onOpenDiff, t,
+}: {
+  details: GitCommitDetails
+  diff: GitFileDiffResult | null
+  diffPath: string | null
+  diffPhase: 'idle' | 'loading' | 'error'
+  onOpenDiff: (path: string, oldPath: string | null) => void
+  t: (key: GitStatusLocaleKey, params?: Record<string, unknown>) => string
+}): ReactNode {
+  // `files` is also treated as possibly missing so a stale payload cannot
+  // crash the details panel (and with it the whole sidebar action).
+  const files = (details.files as GitCommitDetails['files'] | undefined) ?? []
+  return (
+    <>
+      {details.message.length > 0 ? (
+        <pre className={css.message}>{details.message}</pre>
+      ) : null}
+      <p className={css.filesHeading}>{t('history.files', { count: files.length })}</p>
+      <ul className={css.fileList}>
+        {files.map(file => (
+          <li key={`${file.path}:${file.oldPath ?? ''}`}>
+            <button
+              type="button"
+              className={css.fileRow}
+              data-open={diffPath === file.path ? 'true' : undefined}
+              onClick={() => { onOpenDiff(file.path, file.oldPath) }}
+            >
+              <span className={css.fileStats}>
+                {file.added === null || file.removed === null
+                  ? t('history.binary')
+                  : `+${file.added} -${file.removed}`}
+              </span>
+              <span className={css.filePath}>{file.path}</span>
+              {file.oldPath !== null ? (
+                <span className={css.fileOldPath}>{t('history.renamed', { oldPath: file.oldPath })}</span>
+              ) : null}
+            </button>
+            {diffPath === file.path && diffPhase === 'loading' ? (
+              <p className={css.status}>{t('history.loading')}</p>
+            ) : null}
+            {diffPath === file.path && diffPhase === 'error' ? (
+              <p className={css.status} role="alert">{t('history.diffFailed')}</p>
+            ) : null}
+            {diffPath === file.path && diff !== null && diff.failure === null ? (
+              <div className={css.diffArea}>
+                {diff.binary ? <p className={css.status}>{t('history.binary')}</p> : null}
+                {diff.truncated ? (
+                  <p className={css.status}>{t('history.truncatedDiff', { limit: 64 })}</p>
+                ) : null}
+                {!diff.binary ? (
+                  <DiffBlock
+                    diffs={[{ path: diff.path, oldText: diff.oldText, newText: diff.newText ?? '' }]}
+                    maxLines={40}
+                    labels={{
+                      copy: t('diff.copy'),
+                      copied: t('diff.copied'),
+                      collapseAria: t('diff.collapseAria'),
+                      expandAria: count => t('diff.expandAria', { count }),
+                      collapse: t('diff.collapse'),
+                      expand: count => t('diff.expandRest', { count }),
+                      files: count => t(count === 1 ? 'diff.files.one' : 'diff.files.other', { count }),
+                    }}
+                  />
+                ) : null}
+              </div>
+            ) : null}
+            {diffPath === file.path && diff !== null && diff.failure !== null ? (
+              <p className={css.status} role="alert">{diff.failure.message}</p>
+            ) : null}
+          </li>
+        ))}
+      </ul>
+    </>
   )
 }

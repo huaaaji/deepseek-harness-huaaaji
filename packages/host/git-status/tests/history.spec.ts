@@ -6,7 +6,7 @@ import { Context } from '@deepseek-ai/cordis'
 import GitStatusGateway from '../src/index.ts'
 import { runGit } from '../src/git.ts'
 import {
-  historyArgs, parseHistoryLog, parseNumstat, parseRefs, validBranchName,
+  historyArgs, parseBranchList, parseHistoryLog, parseNumstat, parseRefs, validBranchName,
 } from '../src/history.ts'
 
 const gitAvailable = await runGit(['--version'], tmpdir()).then(
@@ -111,6 +111,18 @@ describe('parseNumstat', () => {
   })
 })
 
+describe('parseBranchList', () => {
+  it('strips the current marker and drops detached HEAD and remote aliases', () => {
+    expect(parseBranchList('* main\n  feature\n  * (HEAD detached at 47f9438)\n  origin/HEAD -> origin/main\n  origin/main\n\n')).toEqual([
+      'main', 'feature', 'origin/main',
+    ])
+  })
+
+  it('returns an empty list for empty output', () => {
+    expect(parseBranchList('')).toEqual([])
+  })
+})
+
 describe('validBranchName', () => {
   it('accepts ordinary names and rejects git-invalid shapes', () => {
     expect(validBranchName('feature/panel-1')).toBe(true)
@@ -188,6 +200,9 @@ async function graphRepo(): Promise<{ root: string; gateway: GitStatusGateway; h
   await runGit(['commit', '-qm', 'add binary'], root)
   const binary = (await runGit(['rev-parse', 'HEAD'], root)).stdout.trim()
 
+  // A remote tracking ref so `git branch --remotes --contains` has content.
+  await runGit(['update-ref', 'refs/remotes/origin/main', binary], root)
+
   const ctx = new Context()
   contexts.push(ctx)
   await ctx.plugin(GitStatusGateway)
@@ -217,7 +232,10 @@ describe('GitStatusGateway history', () => {
     expect(mergeRow?.parents).toEqual([hashes.main, hashes.feat])
     expect(mergeRow?.refs).toEqual([])
     const headRow = full.commits.find(commit => commit.hash === hashes.binary)
-    expect(headRow?.refs).toEqual([{ kind: 'head', name: 'main' }])
+    expect(headRow?.refs).toEqual([
+      { kind: 'head', name: 'main' },
+      { kind: 'remote', name: 'origin/main' },
+    ])
     const featRow = full.commits.find(commit => commit.hash === hashes.feat)
     expect(featRow?.refs).toEqual([{ kind: 'branch', name: 'feature' }])
     const mainRow = full.commits.find(commit => commit.hash === hashes.main)
@@ -260,6 +278,8 @@ describe('GitStatusGateway history', () => {
     expect(result.details?.files).toEqual([
       { path: 'renamed.txt', oldPath: 'base.txt', added: 0, removed: 0 },
     ])
+    expect(result.details?.localBranches).toEqual(['main'])
+    expect(result.details?.remoteBranches).toEqual(['origin/main'])
 
     const binaryResult = await gateway.commitDetails({ cwd: root, hash: hashes.binary })
     expect(binaryResult.details?.files).toEqual([
@@ -268,6 +288,10 @@ describe('GitStatusGateway history', () => {
 
     const rootResult = await gateway.commitDetails({ cwd: root, hash: hashes.first })
     expect(rootResult.details?.parents).toEqual([])
+    // The root commit is reachable from every branch in the fixture (git
+    // lists branch names alphabetically, so match the set, not the order).
+    expect(rootResult.details?.localBranches).toHaveLength(2)
+    expect(rootResult.details?.localBranches).toEqual(expect.arrayContaining(['main', 'feature']))
   })
 
   it('reports a failure for an unknown commit hash', async () => {

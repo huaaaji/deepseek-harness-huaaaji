@@ -274,6 +274,30 @@
   align-items: center;
 }
 
+.panelBranches {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.branchesLabel {
+  color: var(--dsh-fg-muted, #8b949e);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+/* The graph-owned branch stands out; the other containing branches dim. */
+.panelBranches .refChip:not([data-active='true']) {
+  opacity: 0.55;
+}
+
+.panelBranches .refChip[data-active='true'] {
+  opacity: 1;
+  box-shadow: 0 0 0 1px currentColor inset;
+}
+
 .action {
   display: inline-flex;
   align-items: center;

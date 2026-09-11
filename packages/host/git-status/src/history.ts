@@ -137,6 +137,22 @@ export function parseNumstat(output: string): readonly GitCommitFileStat[] {
   return files
 }
 
+/** Parse `git branch [--remotes] --contains` output into plain branch names.
+ * The `* ` marker of the current branch is stripped; detached-HEAD markers
+ * and `origin/HEAD -> …` aliases are dropped. */
+export function parseBranchList(output: string): readonly string[] {
+  const names: string[] = []
+  for (const rawLine of output.split('\n')) {
+    let name = rawLine.trim()
+    if (name === '') continue
+    if (name.startsWith('* ')) name = name.slice(2)
+    if (name.startsWith('(')) continue
+    if (name.includes('->')) continue
+    names.push(name)
+  }
+  return names
+}
+
 /**
  * The practical subset of `git check-ref-format` rules the GUI enforces
  * before asking git: no control/space/shell-significant characters, no `..`,
