@@ -52,7 +52,9 @@ export function FileViewerDrawer({
 }: FileViewerDrawerProps): ReactNode {
   const open = useStore(state => state.open)
   const workspaces = useWorkspaces(state => state.items)
-  const currentSession = useSessions(state => state.current)
+  // The main view's retained Session is the current one.
+  const currentSession = useSessions(state =>
+    Object.values(state.byId).find(session => (session.retainedBy.mainView ?? 0) > 0)?.id)
 
   const root = useMemo(
     () => resolveCwd(workspaces, undefined, currentSession),

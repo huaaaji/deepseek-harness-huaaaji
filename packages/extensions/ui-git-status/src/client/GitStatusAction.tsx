@@ -57,7 +57,9 @@ export function GitStatusAction({
 }: GitStatusActionProps): ReactNode {
   const detailsId = useId()
   const workspaces = useWorkspaces(state => state.items)
-  const currentSession = useSessions(state => state.current)
+  // The main view's retained Session is the current one.
+  const currentSession = useSessions(state =>
+    Object.values(state.byId).find(session => (session.retainedBy.mainView ?? 0) > 0)?.id)
   const [load, setLoad] = useState<LoadState>({ status: 'idle' })
   const [open, setOpen] = useState(false)
   const [request, setRequest] = useState(0)
