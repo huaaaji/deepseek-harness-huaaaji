@@ -5,7 +5,7 @@ import type {
   FileViewerFailure, FileViewerListResult, FileViewerReadResult,
 } from '@deepseek-ai/dsh-api-remotes/client'
 import {
-  IconChevronLeftOutline14, IconChevronUpOutline14, IconCloseOutline16, IconFolderOpenOutline16,
+  IconChevronLeftOutlineRegular, IconChevronUpOutlineRegular, IconCloseOutlineRegular, IconFolderOpenOutlineRegular,
   MarkdownText, ReadBlock,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { InjectFace, PropsLocale, PropsRuntime, PropsStore } from '@deepseek-ai/dsh-client-ui-slots'
@@ -124,11 +124,11 @@ export function FileViewerDrawer({
           aria-label={doc === null ? t('drawer.up') : t('drawer.back')}
           disabled={doc === null && parentOf(dir ?? '') === null}
         >
-          {doc === null ? <IconChevronUpOutline14 /> : <IconChevronLeftOutline14 />}
+          {doc === null ? <IconChevronUpOutlineRegular /> : <IconChevronLeftOutlineRegular />}
         </button>
         <span className={css.title} title={doc?.path ?? dir ?? ''}>{doc?.path ?? dir ?? ''}</span>
         <button type="button" className={css.iconButton} onClick={() => { actions.close() }} aria-label={t('drawer.close')}>
-          <IconCloseOutline16 />
+          <IconCloseOutlineRegular />
         </button>
       </header>
       <div className={css.body}>
@@ -194,7 +194,7 @@ function ListingView({
               else onOpenFile(joinPath(dir, entry.name))
             }}
           >
-            {entry.kind === 'directory' ? <IconFolderOpenOutline16 className={css.entryIcon} /> : null}
+            {entry.kind === 'directory' ? <IconFolderOpenOutlineRegular className={css.entryIcon} /> : null}
             <span className={css.entryName}>{entry.name}</span>
             <span className={css.entryMeta}>{entry.kind === 'directory' ? t('entry.directory') : formatSize(entry.size)}</span>
           </button>
@@ -239,6 +239,9 @@ function DocView({ doc, t }: { doc: Doc; t: Translate }): ReactNode {
       totalLines={result.totalLines}
       lang={result.language ?? undefined}
       labels={{
+        codeLabel: t('codeBlock.title'),
+        wrapLabel: t('codeBlock.wrap'),
+        unwrapLabel: t('codeBlock.unwrap'),
         window: (shown, total) => t('read.window', { shown, total }),
         copy: t('read.copy'),
         copied: t('read.copied'),

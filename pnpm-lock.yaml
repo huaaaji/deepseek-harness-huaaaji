@@ -1233,16 +1233,16 @@ importers:
         specifier: workspace:*
         version: link:../../goal/goal
       '@deepseek-ai/dsh-host-file-viewer':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../host/file-viewer
       '@deepseek-ai/dsh-host-git-status':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../host/git-status
       '@deepseek-ai/dsh-host-plugin-inventory':
         specifier: workspace:*
         version: link:../../host/plugin-inventory
       '@deepseek-ai/dsh-invariants':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../runtime-diagnostics/invariants
       '@deepseek-ai/dsh-llm':
         specifier: workspace:*
@@ -2469,10 +2469,10 @@ importers:
         specifier: workspace:*
         version: link:../../client/ui-directory-picker-native
       '@deepseek-ai/dsh-client-ui-file-viewer':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../extensions/ui-file-viewer
       '@deepseek-ai/dsh-client-ui-git-status':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../extensions/ui-git-status
       '@deepseek-ai/dsh-client-ui-goal':
         specifier: workspace:*
@@ -2628,13 +2628,13 @@ importers:
         specifier: workspace:*
         version: link:../../host/directory-picker-native
       '@deepseek-ai/dsh-host-file-viewer':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../host/file-viewer
       '@deepseek-ai/dsh-host-frontend-static':
         specifier: workspace:*
         version: link:../../host/frontend-static
       '@deepseek-ai/dsh-host-git-status':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../host/git-status
       '@deepseek-ai/dsh-host-open-in-app':
         specifier: workspace:*

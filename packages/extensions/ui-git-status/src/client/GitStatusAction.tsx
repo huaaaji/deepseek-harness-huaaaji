@@ -3,7 +3,7 @@
 import { useEffect, useId, useMemo, useState, type ReactNode } from 'react'
 import type { GitStatusSnapshot } from '@deepseek-ai/dsh-api-remotes/client'
 import {
-  IconBranchOutline16, IconRefreshOutline16, Modal,
+  IconBranchOutlineRegular, IconRefreshOutlineRegular, Modal,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type {} from '@deepseek-ai/dsh-client-ui-sidebar/client'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
@@ -96,12 +96,12 @@ export function GitStatusAction({
   if (cwd === null) {
     return wide ? (
       <span className={css.footRow} data-state="empty">
-        <IconBranchOutline16 size={14} aria-hidden="true" />
+        <IconBranchOutlineRegular size={14} aria-hidden="true" />
         <span className={css.footLabel}>{t('widget.noWorkspace')}</span>
       </span>
     ) : (
       <span className={css.railIcon} data-state="empty" role="img" aria-label={t('widget.noWorkspace')}>
-        <IconBranchOutline16 size={18} />
+        <IconBranchOutlineRegular size={18} />
       </span>
     )
   }
@@ -122,7 +122,7 @@ export function GitStatusAction({
         title={wide ? label : t('widget.aria')}
         onClick={() => { setOpen(true) }}
       >
-        <IconBranchOutline16 size={wide ? 14 : 18} aria-hidden="true" />
+        <IconBranchOutlineRegular size={wide ? 14 : 18} aria-hidden="true" />
         {wide ? (
           <span className={css.footLabel} data-state={summary.state}>{label}</span>
         ) : null}
@@ -141,7 +141,7 @@ export function GitStatusAction({
           <div className={css.modalFooter}>
             {tab === 'status' ? (
               <button type="button" className={css.actionButton} onClick={retry} disabled={load.status === 'loading'}>
-                <IconRefreshOutline16 size={14} aria-hidden="true" />
+                <IconRefreshOutlineRegular size={14} aria-hidden="true" />
                 {t('modal.refresh')}
               </button>
             ) : null}

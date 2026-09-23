@@ -73,8 +73,9 @@ export const zh = {
   'diff.expandAria': '展开差异',
   'diff.collapse': '折叠',
   'diff.expandRest': '展开剩余 {count} 行',
-  'diff.files.one': '{count} 个文件',
-  'diff.files.other': '{count} 个文件',
+  'codeBlock.title': '代码',
+  'codeBlock.wrap': '自动换行',
+  'codeBlock.unwrap': '取消自动换行',
 } satisfies Record<string, string>
 
 /** Translation keys owned by the git-status UI namespace. */
@@ -158,6 +159,7 @@ export const en = {
   'diff.expandAria': 'Expand diff',
   'diff.collapse': 'Collapse',
   'diff.expandRest': 'Expand {count} more lines',
-  'diff.files.one': '{count} file',
-  'diff.files.other': '{count} files',
+  'codeBlock.title': 'Code',
+  'codeBlock.wrap': 'Wrap lines',
+  'codeBlock.unwrap': 'Keep source columns',
 } satisfies Record<string, string>

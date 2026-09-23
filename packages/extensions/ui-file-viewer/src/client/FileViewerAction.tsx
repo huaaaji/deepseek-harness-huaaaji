@@ -1,7 +1,7 @@
 /** Sidebar foot trigger that opens the file-viewer drawer. */
 
 import type { ReactNode } from 'react'
-import { IconBrowseOutline16 } from '@deepseek-ai/dsh-client-ui-primitives'
+import { IconBrowseOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { PropsLocale, PropsRuntime, PropsStore } from '@deepseek-ai/dsh-client-ui-slots'
 import type { createFileViewerStore } from './stores.ts'
 import css from './FileViewerAction.module.css'
@@ -27,7 +27,7 @@ export function FileViewerAction({
       title={t('action.aria')}
       onClick={() => { actions.open() }}
     >
-      <IconBrowseOutline16 size={wide ? 14 : 18} aria-hidden="true" />
+      <IconBrowseOutlineRegular size={wide ? 14 : 18} aria-hidden="true" />
       {wide ? <span className={css.footLabel}>{t('action.label')}</span> : null}
     </button>
   )

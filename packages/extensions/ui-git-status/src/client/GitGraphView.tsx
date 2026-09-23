@@ -6,7 +6,7 @@ import type {
   GitHistoryResult, GitMutationResult, GitRefLabel,
 } from '@deepseek-ai/dsh-api-remotes/client'
 import {
-  DiffBlock, IconBranchOutline16, IconRefreshOutline16, IconSearchOutline16,
+  DiffBlock, IconBranchOutlineRegular, IconRefreshOutlineRegular, IconSearchOutlineRegular,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { InjectFace, PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
 import {
@@ -171,7 +171,7 @@ export function GitGraphView({
     <div className={css.view} data-commits={filtered.length}>
       <div className={css.toolbar}>
         <label className={css.search}>
-          <IconSearchOutline16 size={14} aria-hidden="true" />
+          <IconSearchOutlineRegular size={14} aria-hidden="true" />
           <span className={css.visuallyHidden}>{t('history.search')}</span>
           <input
             type="search"
@@ -188,7 +188,7 @@ export function GitGraphView({
           disabled={phase.status === 'loading'}
           aria-label={t('history.refresh')}
         >
-          <IconRefreshOutline16 size={14} aria-hidden="true" />
+          <IconRefreshOutlineRegular size={14} aria-hidden="true" />
         </button>
         <span className={css.count}>{t('history.count', { count: filtered.length })}</span>
       </div>
@@ -355,7 +355,7 @@ function RefChip({
         }
       } : undefined}
     >
-      <IconBranchOutline16 size={10} aria-hidden="true" />
+      <IconBranchOutlineRegular size={10} aria-hidden="true" />
       {refLabel.name}
     </span>
   )
@@ -385,7 +385,7 @@ function renderBranchRow(
       data-active={laneBranch !== null && name === laneBranch ? 'true' : undefined}
       title={laneBranch !== null && name === laneBranch ? t('history.owningBranch') : undefined}
     >
-      <IconBranchOutline16 size={10} aria-hidden="true" />
+      <IconBranchOutlineRegular size={10} aria-hidden="true" />
       {name}
     </span>
   )
@@ -535,13 +535,15 @@ function DetailsFiles({
                     diffs={[{ path: diff.path, oldText: diff.oldText, newText: diff.newText ?? '' }]}
                     maxLines={40}
                     labels={{
+                      codeLabel: t('codeBlock.title'),
+                      wrapLabel: t('codeBlock.wrap'),
+                      unwrapLabel: t('codeBlock.unwrap'),
                       copy: t('diff.copy'),
                       copied: t('diff.copied'),
                       collapseAria: t('diff.collapseAria'),
                       expandAria: count => t('diff.expandAria', { count }),
                       collapse: t('diff.collapse'),
                       expand: count => t('diff.expandRest', { count }),
-                      files: count => t(count === 1 ? 'diff.files.one' : 'diff.files.other', { count }),
                     }}
                   />
                 ) : null}
