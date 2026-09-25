@@ -37,7 +37,6 @@
     // Client package outside packages/client with a local CSS module face.
     "packages/extensions/ui-cordis/src/css-modules.d.ts",
     "packages/extensions/ui-git-status/src/css-modules.d.ts",
-    "packages/extensions/ui-file-viewer/src/css-modules.d.ts",
     "packages/client/tsdown.client.ts",
     "scripts/client-build-environment.ts",
     "scripts/bundle-input-isolation.ts",
@@ -87,7 +86,6 @@
     { "path": "./packages/extensions/cordis-client-runner" },
     { "path": "./packages/extensions/ui-cordis" },
     { "path": "./packages/extensions/ui-git-status" },
-    { "path": "./packages/extensions/ui-file-viewer" },
     { "path": "./packages/test-support/client-runtime" },
     { "path": "./packages/test-support/remote-mock" },
     { "path": "./packages/client/shortcuts/tsconfig.client.json" },

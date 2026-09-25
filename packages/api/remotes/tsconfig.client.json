@@ -52,9 +52,6 @@
       "path": "../../host/git-status"
     },
     {
-      "path": "../../host/file-viewer"
-    },
-    {
       "path": "../../interaction/commands"
     },
     {
