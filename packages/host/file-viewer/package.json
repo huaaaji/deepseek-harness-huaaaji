@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-host-file-viewer",
   "description": "Read-only file/directory Remote over ctx.fs: bounded directory listings and line-numbered, syntax-tagged text windows for the Web GUI file viewer",
-  "version": "0.1.7-rc.1",
+  "version": "0.1.7-rc.2",
   "publishConfig": {
     "access": "public"
   },

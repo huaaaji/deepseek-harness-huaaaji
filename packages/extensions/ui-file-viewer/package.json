@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-client-ui-file-viewer",
   "description": "Web GUI file viewer: a right-docked drawer that browses a workspace directory and renders files with syntax highlighting or Markdown",
-  "version": "0.1.7-rc.1",
+  "version": "0.1.7-rc.2",
   "publishConfig": {
     "access": "public"
   },
