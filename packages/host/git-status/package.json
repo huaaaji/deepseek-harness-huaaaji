@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-host-git-status",
   "description": "Read-only Remote snapshot of the git working tree: branch, head, and porcelain-v2 status for the Web GUI",
-  "version": "0.1.7-rc.2",
+  "version": "0.2.0-rc.2",
   "publishConfig": {
     "access": "public"
   },
