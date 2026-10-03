@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { GitCommitView } from '@deepseek-ai/dsh-api-remotes/client'
 import {
-  buildGraph, edgePath, graphWidth, laneX, paletteColor,
+  buildGraph, compactRows, edgePath, graphWidth, laneX, paletteColor,
   GRAPH_GEOMETRY, LANE_PALETTE,
 } from '../src/client/graph.ts'
 import { commitAge, matchesQuery } from '../src/client/model.ts'
@@ -136,6 +136,41 @@ describe('edgePath', () => {
   })
 })
 
+describe('compactRows', () => {
+  // A fork window: `feat` shares `base` with the main line.
+  const window = buildGraph([
+    commit('m', ['main2', 'feat'], [{ kind: 'branch', name: 'main' }], 'merge'),
+    commit('feat', ['base'], [{ kind: 'branch', name: 'feature' }], 'feature tip'),
+    commit('main2', ['base'], [], 'main work'),
+    commit('base', []),
+  ])
+
+  it('keeps every row when the search matches everything', () => {
+    const kept = compactRows(window, new Set(window.map(row => row.commit.hash)))
+    expect(kept.map(row => row.commit.hash)).toEqual(['m', 'feat', 'main2', 'base'])
+    expect(kept.map(row => row.row)).toEqual([0, 1, 2, 3])
+    expect(kept[0]?.edges).toEqual(window[0]?.edges)
+  })
+
+  it('re-indexes the rows a search keeps without re-deriving their layout', () => {
+    // Hiding `feat` must not move the surviving main line to another lane, and
+    // the merge connector that pointed at the hidden row is dropped.
+    const kept = compactRows(window, new Set(['m', 'main2', 'base']))
+    expect(kept.map(row => row.commit.hash)).toEqual(['m', 'main2', 'base'])
+    expect(kept.map(row => row.row)).toEqual([0, 1, 2])
+    expect(kept.map(row => row.lane)).toEqual([0, 0, 0])
+    expect(kept[0]?.color).toBe(window[0]?.color)
+    expect(kept[0]?.branchName).toBe('main')
+    expect(kept[0]?.edges).toEqual([
+      { fromLane: 0, fromRow: 0, toLane: 0, toRow: 1, color: window[0]?.color, bend: 'parent' },
+    ])
+  })
+
+  it('returns nothing for an empty match set', () => {
+    expect(compactRows(window, new Set())).toEqual([])
+  })
+})
+
 describe('graph geometry helpers', () => {
   it('computes lane centers, palette wraps, and overlay width', () => {
     expect(laneX(0)).toBe(GRAPH_GEOMETRY.paddingLeft + GRAPH_GEOMETRY.dotRadius)
@@ -166,7 +201,8 @@ describe('commitAge', () => {
   const now = Date.parse('2026-01-01T12:00:00+08:00')
 
   it('buckets fresh, hourly, and daily ages', () => {
-    expect(commitAge('2026-01-01T11:59:30+08:00', now)).toEqual({ unit: 'minutes', value: 0 })
+    expect(commitAge('2026-01-01T12:00:00+08:00', now)).toEqual({ unit: 'now' })
+    expect(commitAge('2026-01-01T11:59:30+08:00', now)).toEqual({ unit: 'now' })
     expect(commitAge('2026-01-01T11:30:00+08:00', now)).toEqual({ unit: 'minutes', value: 30 })
     expect(commitAge('2026-01-01T09:00:00+08:00', now)).toEqual({ unit: 'hours', value: 3 })
     expect(commitAge('2025-12-30T09:00:00+08:00', now)).toEqual({ unit: 'days', value: 2 })

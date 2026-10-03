@@ -69,19 +69,19 @@ describe('resolveCwd', () => {
   const workspaces = [a, b]
 
   it('prefers the workspace owning the current session', () => {
-    expect(resolveCwd(workspaces, 'b' as WorkspaceId, 's2' as SessionId)).toBe('/repo-b')
+    expect(resolveCwd(workspaces, 's2' as SessionId)).toBe('/repo-b')
   })
 
-  it('falls back to the recent workspace without a current session', () => {
-    expect(resolveCwd(workspaces, 'b' as WorkspaceId, undefined)).toBe('/repo-b')
+  it('falls back to the first registered workspace without a session', () => {
+    expect(resolveCwd(workspaces, undefined)).toBe('/repo-a')
   })
 
-  it('falls back to the first workspace without any selection', () => {
-    expect(resolveCwd(workspaces, undefined, undefined)).toBe('/repo-a')
+  it('ignores a session no workspace accounts for', () => {
+    expect(resolveCwd(workspaces, 's9' as SessionId)).toBe('/repo-a')
   })
 
   it('returns null with no registered workspace', () => {
-    expect(resolveCwd([], undefined, undefined)).toBeNull()
+    expect(resolveCwd([], undefined)).toBeNull()
   })
 })
 

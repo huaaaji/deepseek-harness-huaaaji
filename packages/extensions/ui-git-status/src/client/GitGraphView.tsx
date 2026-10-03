@@ -1,6 +1,6 @@
 /** History tab: the commit graph list, per-commit details, diffs, and basic mutations. */
 
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import type {
   GitCommitDetails, GitCommitDetailsResult, GitCommitView, GitFileDiffResult,
   GitHistoryResult, GitMutationResult, GitRefLabel,
@@ -10,7 +10,7 @@ import {
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { InjectFace, PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
 import {
-  GRAPH_GEOMETRY, buildGraph, dotY, edgePath, graphWidth, laneX, paletteColor,
+  GRAPH_GEOMETRY, buildGraph, compactRows, dotY, edgePath, graphWidth, laneX, paletteColor,
 } from './graph.ts'
 import type { GitStatusLocaleKey } from './locales.ts'
 import { commitAge, matchesQuery } from './model.ts'
@@ -28,6 +28,9 @@ export interface GitGraphInjected {
 /** One history page's worth of commits. */
 const PAGE_SIZE = 100
 
+/** Translate seat shared by this tab's components. */
+type Translate = (key: GitStatusLocaleKey, params?: Record<string, unknown>) => string
+
 export type GitGraphViewProps = {
   /** Directory the history is read from. */
   cwd: string
@@ -42,6 +45,11 @@ type ListPhase =
   | { readonly status: 'error'; readonly message: string }
   | { readonly status: 'ready' }
 
+/** Human text for a rejected Remote call. */
+function errorText(reason: unknown): string {
+  return reason instanceof Error ? reason.message : String(reason)
+}
+
 /** Render the graph list plus the selection-driven details panel. */
 export function GitGraphView({
   cwd, onMutated, history, commitDetails, fileDiff, checkout, createBranch, t,
@@ -49,21 +57,30 @@ export function GitGraphView({
   const [commits, setCommits] = useState<readonly GitCommitView[]>([])
   const [truncated, setTruncated] = useState(false)
   const [phase, setPhase] = useState<ListPhase>({ status: 'idle' })
+  const [listError, setListError] = useState<string | null>(null)
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState<string | null>(null)
   const [details, setDetails] = useState<GitCommitDetails | null>(null)
   const [detailsPhase, setDetailsPhase] = useState<'idle' | 'loading' | 'error'>('idle')
+  const [detailsError, setDetailsError] = useState<string | null>(null)
   const [diffPath, setDiffPath] = useState<string | null>(null)
   const [diff, setDiff] = useState<GitFileDiffResult | null>(null)
   const [diffPhase, setDiffPhase] = useState<'idle' | 'loading' | 'error'>('idle')
   const [busy, setBusy] = useState(false)
   const [mutationError, setMutationError] = useState<string | null>(null)
   const [branchName, setBranchName] = useState('')
+  // Reads are asynchronous and a user can start a newer one before an older
+  // reply lands; each reply is dropped unless its own token is still current.
+  const tokens = useRef({ list: 0, details: 0, diff: 0 })
 
   const reload = (): void => {
+    const token = tokens.current.list + 1
+    tokens.current.list = token
+    setListError(null)
     setPhase(current => current.status === 'ready' ? { status: 'loading' } : current)
     void Promise.resolve().then(() => history(cwd, PAGE_SIZE, 0)).then(
       (result) => {
+        if (tokens.current.list !== token) return
         if (result.failure !== null) {
           setPhase({ status: 'error', message: result.failure.message })
           return
@@ -73,7 +90,8 @@ export function GitGraphView({
         setPhase({ status: 'ready' })
       },
       (reason: unknown) => {
-        setPhase({ status: 'error', message: String(reason) })
+        if (tokens.current.list !== token) return
+        setPhase({ status: 'error', message: errorText(reason) })
       },
     )
   }
@@ -83,55 +101,76 @@ export function GitGraphView({
     setSelected(null)
     setDetails(null)
     setDiff(null)
+    setTruncated(false)
     reload()
   }, [cwd, history])
 
   const loadMore = (): void => {
+    const token = tokens.current.list + 1
+    tokens.current.list = token
+    setListError(null)
     void Promise.resolve().then(() => history(cwd, PAGE_SIZE, commits.length)).then(
       (result) => {
+        if (tokens.current.list !== token) return
         if (result.failure !== null) {
-          setMutationError(result.failure.message)
+          setListError(result.failure.message)
           return
         }
         setCommits(current => [...current, ...result.commits])
         setTruncated(result.truncated)
       },
       (reason: unknown) => {
-        setMutationError(String(reason))
+        if (tokens.current.list !== token) return
+        setListError(errorText(reason))
       },
     )
   }
 
   const select = (hash: string): void => {
+    const token = tokens.current.details + 1
+    tokens.current.details = token
     setSelected(hash)
     setDetails(null)
+    setDetailsError(null)
     setDiff(null)
     setDiffPath(null)
     setDetailsPhase('loading')
     void Promise.resolve().then(() => commitDetails(cwd, hash)).then(
       (result) => {
+        if (tokens.current.details !== token) return
         if (result.failure !== null) {
           setDetailsPhase('error')
+          setDetailsError(result.failure.message)
           return
         }
         setDetails(result.details)
         setDetailsPhase('idle')
       },
-      () => { setDetailsPhase('error') },
+      (reason: unknown) => {
+        if (tokens.current.details !== token) return
+        setDetailsPhase('error')
+        setDetailsError(errorText(reason))
+      },
     )
   }
 
   const openDiff = (path: string, oldPath: string | null): void => {
     if (selected === null) return
+    const token = tokens.current.diff + 1
+    tokens.current.diff = token
     setDiffPath(path)
     setDiff(null)
     setDiffPhase('loading')
     void Promise.resolve().then(() => fileDiff(cwd, selected, path, oldPath)).then(
       (result) => {
+        if (tokens.current.diff !== token) return
         setDiff(result)
         setDiffPhase('idle')
       },
-      () => { setDiffPhase('error') },
+      () => {
+        if (tokens.current.diff !== token) return
+        setDiffPhase('error')
+      },
     )
   }
 
@@ -147,6 +186,8 @@ export function GitGraphView({
       setBranchName('')
       onMutated()
       reload()
+    } catch (reason) {
+      setMutationError(errorText(reason))
     } finally {
       setBusy(false)
     }
@@ -156,7 +197,13 @@ export function GitGraphView({
     () => commits.filter(commit => matchesQuery(commit, query)),
     [commits, query],
   )
-  const rows = useMemo(() => buildGraph(filtered), [filtered])
+  // The layout always covers the loaded window; the search only hides rows, so
+  // a visible commit keeps the lane, color, and connectors of the full graph.
+  const rows = useMemo(() => buildGraph(commits), [commits])
+  const visibleRows = useMemo(
+    () => compactRows(rows, new Set(filtered.map(commit => commit.hash))),
+    [rows, filtered],
+  )
   const maxLane = useMemo(
     () => rows.reduce((lane, row) => Math.max(lane, row.lane), 0),
     [rows],
@@ -193,7 +240,7 @@ export function GitGraphView({
         <span className={css.count}>{t('history.count', { count: filtered.length })}</span>
       </div>
       <div className={css.columns}>
-        <div className={css.list} role="list" aria-busy={phase.status === 'loading'}>
+        <div className={css.list} aria-busy={phase.status === 'loading'}>
           {phase.status === 'error' ? (
             <div className={css.status} role="alert">
               <p>{t('history.loadFailed')}</p>
@@ -207,15 +254,15 @@ export function GitGraphView({
           {phase.status === 'ready' && filtered.length === 0 ? (
             <p className={css.status}>{t('history.empty')}</p>
           ) : null}
-          {filtered.length > 0 ? (
+          {visibleRows.length > 0 ? (
             <div className={css.graphArea}>
               <svg
                 className={css.graphSvg}
                 width={graphWidthPx}
-                height={rows.length * GRAPH_GEOMETRY.rowHeight}
+                height={visibleRows.length * GRAPH_GEOMETRY.rowHeight}
                 aria-hidden="true"
               >
-                {rows.flatMap(row => row.edges.map((edge, index) => (
+                {visibleRows.flatMap(row => row.edges.map((edge, index) => (
                   <path
                     key={`e-${row.row}-${index}`}
                     d={edgePath(edge)}
@@ -224,9 +271,9 @@ export function GitGraphView({
                     fill="none"
                   />
                 )))}
-                {rows.map(row => (
+                {visibleRows.map(row => (
                   <circle
-                    key={`d-${row.row}`}
+                    key={`d-${row.commit.hash}`}
                     cx={laneX(row.lane)}
                     cy={dotY(row.row)}
                     r={GRAPH_GEOMETRY.dotRadius}
@@ -236,7 +283,7 @@ export function GitGraphView({
                   />
                 ))}
               </svg>
-              {rows.map(row => (
+              {visibleRows.map(row => (
                 <CommitRow
                   key={row.commit.hash}
                   row={row}
@@ -255,6 +302,11 @@ export function GitGraphView({
               {t('history.loadMore')}
             </button>
           ) : null}
+          {listError !== null ? (
+            <p className={css.errorDetail} role="alert">
+              {t('history.loadMoreFailed')}: {listError}
+            </p>
+          ) : null}
         </div>
         <div className={css.details} aria-live="polite">
           {selectedCommit === undefined ? <p className={css.status}>{t('history.noSelection')}</p> : null}
@@ -264,6 +316,7 @@ export function GitGraphView({
               laneBranch={selectedRow?.branchName ?? null}
               details={details}
               detailsPhase={detailsPhase}
+              detailsError={detailsError}
               diff={diff}
               diffPath={diffPath}
               diffPhase={diffPhase}
@@ -284,7 +337,8 @@ export function GitGraphView({
   )
 }
 
-/** One fixed-height list row: subject, ref chips, and meta. */
+/** One fixed-height list row: subject, ref chips, and meta. The row is the
+ * selection control, so it takes focus and answers Enter and Space. */
 function CommitRow({
   row, graphLeft, selected, onSelect, onCheckoutBranch, t, now,
 }: {
@@ -293,32 +347,46 @@ function CommitRow({
   selected: boolean
   onSelect: (hash: string) => void
   onCheckoutBranch: (name: string) => void
-  t: (key: GitStatusLocaleKey, params?: Record<string, unknown>) => string
+  t: Translate
   now: number
 }): ReactNode {
   const { commit } = row
   const age = commitAge(commit.authorDate, now)
-  const ageText = age.unit === 'date'
-    ? t('time.date', { value: age.value })
-    : t(`time.${age.unit}`, { value: age.value })
+  const ageText = age.unit === 'now'
+    ? t('time.now')
+    : age.unit === 'date'
+      ? t('time.date', { value: age.value })
+      : t(`time.${age.unit}`, { value: age.value })
   return (
     <div
       className={css.row}
       data-selected={selected ? 'true' : undefined}
       style={{ paddingLeft: graphLeft + 8 }}
-      role="listitem"
+      role="button"
+      tabIndex={0}
+      aria-current={selected ? 'true' : undefined}
       onClick={() => { onSelect(commit.hash) }}
+      onKeyDown={(event) => {
+        if (event.key !== 'Enter' && event.key !== ' ') return
+        event.preventDefault()
+        onSelect(commit.hash)
+      }}
     >
       <div className={css.rowSubject}>
         <span className={css.subject}>{commit.subject}</span>
         <span className={css.chips}>
           {commit.refs.map((ref, index) => (
-            <RefChip key={`${ref.kind}-${ref.name}-${index}`} refLabel={ref} onCheckoutBranch={onCheckoutBranch} />
+            <RefChip
+              key={`${ref.kind}-${ref.name}-${index}`}
+              refLabel={ref}
+              onCheckoutBranch={onCheckoutBranch}
+              t={t}
+            />
           ))}
         </span>
       </div>
       <div className={css.rowMeta}>
-        <span>{commit.author}</span>
+        <span>{t('history.authorLine', { author: commit.author, email: commit.authorEmail })}</span>
         <span>{ageText}</span>
         <span className={css.hash}>{commit.shortHash}</span>
       </div>
@@ -326,15 +394,19 @@ function CommitRow({
   )
 }
 
-/** One ref chip: HEAD arrow, branch (click = checkout), remote, or tag. */
+/** One ref chip: HEAD marker, branch (click = checkout), remote, or tag. */
 function RefChip({
-  refLabel, onCheckoutBranch,
+  refLabel, onCheckoutBranch, t,
 }: {
   refLabel: GitRefLabel
   onCheckoutBranch: (name: string) => void
+  t: Translate
 }): ReactNode {
   if (refLabel.kind === 'head') {
-    return <span className={css.headChip} title="HEAD">HEAD</span>
+    // `HEAD -> <branch>` names the checked-out branch; a detached HEAD
+    // decoration carries no name.
+    const headLabel = refLabel.name.length > 0 ? refLabel.name : t('history.headChip')
+    return <span className={css.headChip} title={headLabel}>{headLabel}</span>
   }
   const checkoutable = refLabel.kind === 'branch'
   return (
@@ -351,6 +423,7 @@ function RefChip({
       onKeyDown={checkoutable ? (event) => {
         if (event.key === 'Enter' || event.key === ' ') {
           event.stopPropagation()
+          event.preventDefault()
           onCheckoutBranch(refLabel.name)
         }
       } : undefined}
@@ -369,7 +442,7 @@ function RefChip({
 function renderBranchRow(
   details: GitCommitDetails | null,
   laneBranch: string | null,
-  t: (key: GitStatusLocaleKey, params?: Record<string, unknown>) => string,
+  t: Translate,
 ): ReactNode {
   if (details === null) return null
   // The arrays are new wire fields: against a stale payload (mixed host/bundle
@@ -400,7 +473,7 @@ function renderBranchRow(
 
 /** The right-hand panel: message, files, diffs, and actions for the selection. */
 function DetailsPanel({
-  commit, laneBranch, details, detailsPhase, diff, diffPath, diffPhase, busy, branchName,
+  commit, laneBranch, details, detailsPhase, detailsError, diff, diffPath, diffPhase, busy, branchName,
   mutationError, setBranchName, onOpenDiff, onCheckoutCommit, onCreateBranch,
   onRetryDetails, t,
 }: {
@@ -409,6 +482,7 @@ function DetailsPanel({
   laneBranch: string | null
   details: GitCommitDetails | null
   detailsPhase: 'idle' | 'loading' | 'error'
+  detailsError: string | null
   diff: GitFileDiffResult | null
   diffPath: string | null
   diffPhase: 'idle' | 'loading' | 'error'
@@ -420,13 +494,13 @@ function DetailsPanel({
   onCheckoutCommit: () => void
   onCreateBranch: () => void
   onRetryDetails: () => void
-  t: (key: GitStatusLocaleKey, params?: Record<string, unknown>) => string
+  t: Translate
 }): ReactNode {
   return (
     <div className={css.panel}>
       <h3 className={css.panelSubject}>{commit.subject}</h3>
       <p className={css.panelMeta}>
-        <span>{commit.author} &lt;{commit.authorEmail}&gt;</span>
+        <span>{t('history.authorLine', { author: commit.author, email: commit.authorEmail })}</span>
         <span>{commit.authorDate}</span>
         <span className={css.hash}>{commit.hash}</span>
       </p>
@@ -461,6 +535,7 @@ function DetailsPanel({
       {detailsPhase === 'error' ? (
         <div className={css.status} role="alert">
           <p>{t('history.detailsFailed')}</p>
+          {detailsError !== null ? <p className={css.errorDetail}>{detailsError}</p> : null}
           <button type="button" className={css.action} onClick={onRetryDetails}>{t('modal.retry')}</button>
         </div>
       ) : null}
@@ -488,7 +563,7 @@ function DetailsFiles({
   diffPath: string | null
   diffPhase: 'idle' | 'loading' | 'error'
   onOpenDiff: (path: string, oldPath: string | null) => void
-  t: (key: GitStatusLocaleKey, params?: Record<string, unknown>) => string
+  t: Translate
 }): ReactNode {
   // `files` is also treated as possibly missing so a stale payload cannot
   // crash the details panel (and with it the whole sidebar action).
@@ -528,7 +603,7 @@ function DetailsFiles({
               <div className={css.diffArea}>
                 {diff.binary ? <p className={css.status}>{t('history.binary')}</p> : null}
                 {diff.truncated ? (
-                  <p className={css.status}>{t('history.truncatedDiff', { limit: 64 })}</p>
+                  <p className={css.status}>{t('history.truncatedDiff')}</p>
                 ) : null}
                 {!diff.binary ? (
                   <DiffBlock

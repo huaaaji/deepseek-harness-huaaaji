@@ -1,12 +1,14 @@
-import { chmodSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
 import GitStatusGateway from '../src/index.ts'
 import { runGit } from '../src/git.ts'
+import { configWith } from './support.ts'
 import {
   historyArgs, parseBranchList, parseHistoryLog, parseNumstat, parseRefs, validBranchName,
+  validObjectId, validRepoPath,
 } from '../src/history.ts'
 
 const gitAvailable = await runGit(['--version'], tmpdir()).then(
@@ -90,6 +92,9 @@ describe('parseRefs', () => {
     expect(parseRefs('origin/HEAD -> origin/main, origin/main')).toEqual([
       { kind: 'remote', name: 'origin/main' },
     ])
+    expect(parseRefs('upstream/HEAD -> upstream/main, upstream/main')).toEqual([
+      { kind: 'remote', name: 'upstream/main' },
+    ])
     expect(parseRefs('')).toEqual([])
     expect(parseRefs('main, ')).toEqual([{ kind: 'branch', name: 'main' }])
   })
@@ -97,7 +102,13 @@ describe('parseRefs', () => {
 
 describe('parseNumstat', () => {
   it('parses plain, rename, and binary rows, skipping blanks', () => {
-    const files = parseNumstat('12\t3\tfile.ts\n0\t0\told.ts => new.ts\n-\t-\timg.png\n\n5\t0\tsub/file.txt')
+    const files = parseNumstat([
+      '12\t3\tfile.ts\0',
+      '0\t0\t\0old.ts\0new.ts\0',
+      '-\t-\timg.png\0',
+      '\0',
+      '5\t0\tsub/file.txt\0',
+    ].join(''))
     expect(files).toEqual([
       { path: 'file.ts', oldPath: null, added: 12, removed: 3 },
       { path: 'new.ts', oldPath: 'old.ts', added: 0, removed: 0 },
@@ -106,8 +117,25 @@ describe('parseNumstat', () => {
     ])
   })
 
+  it('reads a directory-changing rename as two whole paths', () => {
+    // git's non -z output compresses this pair to `src/{old => other}/file.ts`,
+    // which no path-splitting rule can undo; -z always spells both paths out.
+    const files = parseNumstat('0\t0\t\0src/old/file.ts\0src/other/file.ts\0')
+    expect(files).toEqual([
+      { path: 'src/other/file.ts', oldPath: 'src/old/file.ts', added: 0, removed: 0 },
+    ])
+  })
+
+  it('keeps a tab inside a path', () => {
+    const files = parseNumstat('1\t0\tweird\tname.ts\0')
+    expect(files).toEqual([
+      { path: 'weird\tname.ts', oldPath: null, added: 1, removed: 0 },
+    ])
+  })
+
   it('drops rows that are not numstat-shaped', () => {
-    expect(parseNumstat('just one field\n\nx\ty\n')).toEqual([])
+    expect(parseNumstat('just one field\0\0x\0')).toEqual([])
+    expect(parseNumstat('1\t0\t\0only-old\0')).toEqual([])
   })
 })
 
@@ -120,6 +148,37 @@ describe('parseBranchList', () => {
 
   it('returns an empty list for empty output', () => {
     expect(parseBranchList('')).toEqual([])
+  })
+})
+
+describe('validObjectId', () => {
+  it('accepts abbreviated and full hexadecimal object names', () => {
+    expect(validObjectId('abc1234')).toBe(true)
+    expect(validObjectId('a'.repeat(40))).toBe(true)
+    expect(validObjectId('ABC1234')).toBe(true)
+  })
+
+  it('refuses option-shaped and non-hexadecimal revisions', () => {
+    // `--output=/tmp/x` reaches git's option parser when it is not refused here.
+    expect(validObjectId('--output=/tmp/x')).toBe(false)
+    expect(validObjectId('-f')).toBe(false)
+    expect(validObjectId('main')).toBe(false)
+    expect(validObjectId('abc123')).toBe(false)
+    expect(validObjectId('a'.repeat(41))).toBe(false)
+    expect(validObjectId('')).toBe(false)
+  })
+})
+
+describe('validRepoPath', () => {
+  it('accepts repository-relative paths, including a leading dash', () => {
+    expect(validRepoPath('src/a.ts')).toBe(true)
+    expect(validRepoPath('-odd-name.ts')).toBe(true)
+  })
+
+  it('refuses empty, absolute, and NUL-holding paths', () => {
+    expect(validRepoPath('')).toBe(false)
+    expect(validRepoPath('/etc/passwd')).toBe(false)
+    expect(validRepoPath('a\0b')).toBe(false)
   })
 })
 
@@ -145,6 +204,13 @@ describe('historyArgs', () => {
     expect(args).toContain('--max-count=51')
     expect(args).toContain('--skip=10')
     expect(args.some(arg => arg.startsWith('--format='))).toBe(true)
+  })
+
+  it('selects topological order alone', () => {
+    // Passing --date-order after --topo-order would select commit-date order,
+    // because git keeps the later sort flag.
+    expect(historyArgs(50, 0)).toContain('--topo-order')
+    expect(historyArgs(50, 0)).not.toContain('--date-order')
   })
 })
 
@@ -391,11 +457,56 @@ describe('GitStatusGateway fileDiff', () => {
     expect(result.oldText).toBe('main work v2\n')
   })
 
-  it('reports a spawn failure for an unresolvable directory', async () => {
+  it('reads a directory-changing rename through the -z path pairs', async () => {
+    if (!gitAvailable) return
+    const { root, gateway } = await graphRepo()
+    mkdirSync(join(root, 'src', 'old'), { recursive: true })
+    writeFileSync(join(root, 'src', 'old', 'file.ts'), 'nested\n')
+    await runGit(['add', '.'], root)
+    await runGit(['commit', '-qm', 'add nested file'], root)
+    mkdirSync(join(root, 'src', 'other'), { recursive: true })
+    await runGit(['mv', 'src/old/file.ts', 'src/other/file.ts'], root)
+    await runGit(['commit', '-qm', 'move nested file'], root)
+    const moved = (await runGit(['rev-parse', 'HEAD'], root)).stdout.trim()
+
+    // git's non -z numstat compresses this pair to `src/{old => other}/file.ts`.
+    const details = await gateway.commitDetails({ cwd: root, hash: moved })
+    expect(details.failure).toBeNull()
+    expect(details.details?.files).toEqual([
+      { path: 'src/other/file.ts', oldPath: 'src/old/file.ts', added: 0, removed: 0 },
+    ])
+
+    const diff = await gateway.fileDiff({
+      cwd: root, hash: moved, path: 'src/other/file.ts', oldPath: 'src/old/file.ts',
+    })
+    expect(diff.failure).toBeNull()
+    expect(diff.oldText).toBe('nested\n')
+    expect(diff.newText).toBe('nested\n')
+  })
+
+  it('reads multi-byte content without replacement characters', async () => {
+    if (!gitAvailable) return
+    const { root, gateway } = await graphRepo()
+    // 120 KB of three-byte characters crosses several pipe chunks, so a
+    // per-chunk decode would corrupt the text the diff surface renders.
+    const text = '\u4e2d'.repeat(40_000) + '\n'
+    writeFileSync(join(root, 'cjk.txt'), text)
+    await runGit(['add', '.'], root)
+    await runGit(['commit', '-qm', 'add cjk file'], root)
+    const hash = (await runGit(['rev-parse', 'HEAD'], root)).stdout.trim()
+
+    const result = await gateway.fileDiff({ cwd: root, hash, path: 'cjk.txt', oldPath: null })
+    expect(result.failure).toBeNull()
+    expect(result.truncated).toBe(false)
+    expect(result.newText).toBe(text)
+  })
+
+  it('reports a missing working directory as not-a-repo', async () => {
     if (!gitAvailable) return
     const { gateway, hashes } = await graphRepo()
     const result = await gateway.fileDiff({ cwd: '/definitely/not/a/directory', hash: hashes.edit, path: 'main.txt', oldPath: null })
-    expect(result.failure?.code).toBe('git-unavailable')
+    expect(result.failure?.code).toBe('not-a-repo')
+    expect(result.failure?.message).toBe('working directory does not exist')
   })
 
   it('truncates a side beyond the byte cap', async () => {
@@ -409,6 +520,61 @@ describe('GitStatusGateway fileDiff', () => {
     expect(result.failure).toBeNull()
     expect(result.truncated).toBe(true)
     expect(result.newText?.length).toBeLessThan(70_000)
+  })
+})
+
+describe('GitStatusGateway wire validation', () => {
+  it('refuses option-shaped wire fields before git runs', async () => {
+    if (!gitAvailable) return
+    const { root, gateway, hashes } = await graphRepo()
+    const escapePath = join(tmpdir(), 'dsh-git-status-escape')
+    rmSync(`${escapePath}:base.txt`, { force: true })
+
+    // `git show --output=<file>` would write the commit to that path, and
+    // `git checkout -f` would discard local work; the hash and target shapes
+    // are refused before either reaches git's option parser.
+    const injected = await gateway.fileDiff({
+      cwd: root, hash: `--output=${escapePath}`, path: 'base.txt', oldPath: null,
+    })
+    expect(injected.failure?.code).toBe('invalid-revision')
+    expect(existsSync(`${escapePath}:base.txt`)).toBe(false)
+
+    const details = await gateway.commitDetails({ cwd: root, hash: `--output=${escapePath}` })
+    expect(details.details).toBeNull()
+    expect(details.failure?.code).toBe('invalid-revision')
+
+    const checkout = await gateway.checkout({ cwd: root, kind: 'commit', target: '-f' })
+    expect(checkout.ok).toBe(false)
+    expect(checkout.failure?.code).toBe('invalid-revision')
+
+    const branch = await gateway.createBranch({ cwd: root, name: 'probe', atHash: '--no-track' })
+    expect(branch.ok).toBe(false)
+    expect(branch.failure?.code).toBe('invalid-revision')
+
+    const path = await gateway.fileDiff({ cwd: root, hash: hashes.first, path: '/etc/passwd', oldPath: null })
+    expect(path.failure?.code).toBe('invalid-path')
+  })
+
+  it('keeps local work when a commit-shaped checkout is refused', async () => {
+    if (!gitAvailable) return
+    const { root, gateway } = await graphRepo()
+    writeFileSync(join(root, 'base.txt'), 'local edit\n')
+    const refused = await gateway.checkout({ cwd: root, kind: 'commit', target: '-f' })
+    expect(refused.ok).toBe(false)
+    expect(readFileSync(join(root, 'base.txt'), 'utf8')).toBe('local edit\n')
+  })
+
+  it('clamps the history page to the configured limit', async () => {
+    if (!gitAvailable) return
+    const { root } = await graphRepo()
+    const ctx = new Context()
+    contexts.push(ctx)
+    await ctx.plugin(GitStatusGateway, configWith({ historyLimit: 2 }))
+    const gateway = ctx.get('gitStatus') as GitStatusGateway
+    const page = await gateway.history({ cwd: root, count: 100, skip: 0 })
+    expect(page.failure).toBeNull()
+    expect(page.commits).toHaveLength(2)
+    expect(page.truncated).toBe(true)
   })
 })
 
@@ -450,7 +616,13 @@ describe('GitStatusGateway mutations', () => {
 
   it('kills a checkout that hangs in its hook', async () => {
     if (!gitAvailable) return
-    const { root, gateway } = await graphRepo()
+    const { root } = await graphRepo()
+    // A short configured deadline exercises the same kill path as the default
+    // one without holding the suite for the production 15s budget.
+    const ctx = new Context()
+    contexts.push(ctx)
+    await ctx.plugin(GitStatusGateway, configWith({ timeoutMs: 300 }))
+    const gateway = ctx.get('gitStatus') as GitStatusGateway
     const hook = join(root, '.git', 'hooks', 'post-checkout')
     writeFileSync(hook, '#!/bin/sh\nsleep 30\n')
     chmodSync(hook, 0o755)
@@ -458,7 +630,7 @@ describe('GitStatusGateway mutations', () => {
     expect(result.ok).toBe(false)
     expect(result.failure?.code).toBe('timeout')
     rmSync(hook)
-  }, 20_000)
+  }, 10_000)
 
   it('creates a branch at a commit without checking it out', async () => {
     if (!gitAvailable) return
@@ -470,10 +642,10 @@ describe('GitStatusGateway mutations', () => {
 
   it('rejects invalid and duplicate branch names', async () => {
     if (!gitAvailable) return
-    const { root, gateway } = await graphRepo()
-    const invalid = await gateway.createBranch({ cwd: root, name: 'bad~name', atHash: 'x' })
+    const { root, gateway, hashes } = await graphRepo()
+    const invalid = await gateway.createBranch({ cwd: root, name: 'bad~name', atHash: hashes.first })
     expect(invalid.failure?.code).toBe('invalid-name')
-    const duplicate = await gateway.createBranch({ cwd: root, name: 'main', atHash: 'x' })
+    const duplicate = await gateway.createBranch({ cwd: root, name: 'main', atHash: hashes.first })
     expect(duplicate.ok).toBe(false)
     expect(duplicate.failure?.message).toContain('already exists')
   })

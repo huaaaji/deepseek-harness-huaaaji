@@ -1,6 +1,6 @@
 ---
 description: "应用 Remote 装配：为 Client 消费方选择带类型的 Host 能力与转发事件。"
-kind: "package-reference"
+kind: "package-bundle"
 ---
 
 # @deepseek-ai/dsh-api-remotes
@@ -28,6 +28,8 @@ kind: "package-reference"
 ## 使用本包
 
 [`@deepseek-ai/dsh-api-session-controller`](../session-controller/README.zh.md) 拥有 agent（智能体）与会话身份策略，包括供其他 namespace 使用的 Typert lookup 解析器。本包只选择并挂载生成的会话 contribution，不复制激活策略。
+
+本包同时也是一个可安装的 profile layer：其 manifest 声明了 `dsh.bundle.patch`，因此 Web 的 Plugins 页（或 `dsh plugin --profile <name> add <spec>`）可以把它安装进 profile。把这个装配装到 profile 本地，正是它在应用仍随附旧装配时挂载较新 Host 包所提供的 Remote 方法的方式；该 layer 不声明任何行，因为随附该装配的组合已经声明了它们。
 
 Client 组合挂载 Office 转换、Commands、凭据、settings、Goal、Schedule、动态 Cordis、文件与会话引用、只读 Host 插件清单、插件安装源响应比较、消息反馈、权限预设、会话控制器、subagents 和 Workspace 控制器 contribution。`permissionPresets` namespace 返回 current-session 控件使用的完整进程级目录。该组合卸载时，Cordis effect 的所有权机制会撤回所有贡献；`@deepseek-ai/dsh-api-gateway/client` 负责描述符校验、可追踪的 namespace 服务、直接与作用域方法、调用、流与取消。Client 入口通过 Cordis 消费共享的 `TypertClientRemote` 接口，不导入具体 Gateway；它只以 type-only 形式重新导出 Gateway Client face 的声明合并，因此消费端经由本外观取到转发事件词汇时，运行时不会多出一条通往 Gateway 实现的边。
 
@@ -58,6 +60,8 @@ Host entry 为每条 Client 流独立注册一组 allowlist listener 和一个�
 这条例外不止是一行 `files`。根 `tsconfig.base.json` 把 `@deepseek-ai/dsh-api-remotes/types` 映射到 `src/types.ts`——**源平面**，与其余所有 workspace 子路径一致，也与生成的 `/remote` 产物相反（后者没有 `paths` 条目，靠 `exports` 命中构建产物）。于是两个 face 都把同一份名单与类型投影收进各自的 program，并向 `lib/types` 发射逐字相同的 `remote-events` 与 `types` 输出；`.tsbuildinfo` 仍各自独立。没有任何门禁强制两个 face 的源文件互不重叠——`scripts/project-reference-faces.ts` 只校验「引用一个 split project 必须指到对应 face」——因此本段记录这次双列为何是有意的。
 
 包内 `clientBundle(..., { hostPhase: true })` 让 Host tsdown 打包 Host 入口，让后续 Client tsdown 只打包 browser 入口。普通 Client 插件仍使用单一 Client project，并在 Client tsdown 阶段一起生成 Node loader 入口和 browser bundle；只有两组源码需要不同 compiler face 时才拆分。
+
+被选中的 Host 包增删一个方法时，本包源码没变，这个 bundle 却变了——因为 browser 入口内联了每个生成的 `/remote` 声明。因此只要某个被选中 Host 包的 Remote 面发生变化，就必须重建 Client face（`pnpm run build:lib:client`，或完整 `pnpm run build`）：陈旧的 `lib/client.js` 会挂载上一套方法，而按新声明构建的调用方在调用时以 `ctx.remote.<命名空间>.<方法> is not a function` 失败，页面上却看不出任何过期迹象。
 
 <a id="model-experience"></a>
 ## 模型体验

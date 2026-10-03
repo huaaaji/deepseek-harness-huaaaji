@@ -1,0 +1,9 @@
+# This package is also a profile layer, so the Plugins page can install it: that
+# install action accepts only a package declaring dsh.bundle, and installing the
+# package as a profile dependency is what lets a profile-local copy take
+# precedence over the one shipped inside the application.
+#
+# It declares no rows of its own: the composition that ships this plugin already
+# declares them (the web profile's bundle patch), and inserting a second row with
+# the same id would mount the service twice.
+[]

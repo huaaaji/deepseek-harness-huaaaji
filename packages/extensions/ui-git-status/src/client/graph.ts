@@ -52,7 +52,11 @@ export interface GraphEdge {
   readonly bend: 'parent' | 'child'
 }
 
-/** The dot's center x for one lane. */
+/**
+ * The dot's center x for one lane.
+ * @param lane - 0-based lane index from the left.
+ * @returns the dot center in px from the graph column's left edge.
+ */
 export function laneX(lane: number): number {
   return GRAPH_GEOMETRY.paddingLeft + GRAPH_GEOMETRY.dotRadius + lane * GRAPH_GEOMETRY.laneWidth
 }
@@ -203,6 +207,8 @@ function smallestFreeLane(takenLanes: readonly number[]): number {
  * SVG path data for one connector (dot-center to dot-center). Same-lane edges
  * are straight verticals; cross-lane edges are an S-curve whose bend shrinks
  * when the rows are adjacent so the curve never overshoots either dot.
+ * @param edge - one connector from a laid-out row.
+ * @returns the `d` attribute for the edge's path element.
  */
 export function edgePath(edge: GraphEdge): string {
   const x0 = laneX(edge.fromLane)
@@ -221,19 +227,65 @@ export function edgePath(edge: GraphEdge): string {
   return `M ${x1} ${y1} V ${bendLow} C ${x1} ${y0 + 1.5 * bend}, ${x0} ${y0 + 1.5 * bend}, ${x0} ${bendHigh} V ${y0}`
 }
 
-/** One row's dot center y. */
+/**
+ * One row's dot center y.
+ * @param row - 0-based row index within the laid-out window.
+ * @returns the dot center in px from the graph area's top edge.
+ */
 export function dotY(row: number): number {
   return row * GRAPH_GEOMETRY.rowHeight + GRAPH_GEOMETRY.rowHeight / 2
 }
 
-/** Palette color for a palette index (wraps past the palette end). */
+/**
+ * Palette color for a palette index.
+ * @param color - palette index; indexes past the palette end wrap.
+ * @returns the CSS color for that index.
+ */
 export function paletteColor(color: number): string {
   return LANE_PALETTE[color % LANE_PALETTE.length] ?? LANE_PALETTE[0]
 }
 
-/** The SVG overlay's minimum width for the widest lane. */
+/**
+ * The SVG overlay's minimum width for the widest lane.
+ * @param maxLane - highest lane index the window uses.
+ * @returns the overlay width in px.
+ */
 export function graphWidth(maxLane: number): number {
   return laneX(maxLane) + GRAPH_GEOMETRY.dotRadius + GRAPH_GEOMETRY.laneWidth
+}
+
+/**
+ * Restrict one laid-out window to a set of commits without disturbing the
+ * layout it was assigned. Lane, color, and owning branch stay those of the
+ * full window — searching hides rows, it does not re-derive the graph — so a
+ * visible row keeps its lane and the connectors that joined two visible rows
+ * are re-anchored to their displayed indexes.
+ * @param rows - a window from {@link buildGraph}, in newest-first order.
+ * @param visible - hashes to keep, usually the search matches.
+ * @returns the visible rows, re-indexed from row 0, with edges between them.
+ */
+export function compactRows(
+  rows: readonly GraphRow[],
+  visible: ReadonlySet<string>,
+): readonly GraphRow[] {
+  const displayRow = new Map<string, number>()
+  const kept: GraphRow[] = []
+  for (const row of rows) {
+    if (!visible.has(row.commit.hash)) continue
+    displayRow.set(row.commit.hash, kept.length)
+    kept.push(row)
+  }
+  return kept.map((source, index) => {
+    const edges: GraphEdge[] = []
+    for (const edge of source.edges) {
+      const target = rows[edge.toRow]
+      if (target === undefined) continue
+      const toRow = displayRow.get(target.commit.hash)
+      if (toRow === undefined) continue
+      edges.push({ ...edge, fromRow: index, toRow })
+    }
+    return { ...source, row: index, edges }
+  })
 }
 
 interface MutableRow {

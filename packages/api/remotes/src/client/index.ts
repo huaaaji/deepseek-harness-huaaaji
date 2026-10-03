@@ -46,6 +46,7 @@ export type {
   GitBranchState, GitCommitDetails, GitCommitDetailsResult, GitCommitFileStat,
   GitCommitView, GitCreateBranchRequest, GitFileDiffRequest, GitFileDiffResult,
   GitHistoryRequest, GitHistoryResult, GitMutationResult, GitRefLabel,
+  GitRepositoryRef, GitRepositoryScanRequest, GitRepositoryScanResult,
   GitStatusEntry, GitStatusFailure, GitStatusFileState, GitStatusSnapshot,
 } from '@deepseek-ai/dsh-host-git-status/types'
 export type {} from '@deepseek-ai/dsh-commands/remote'

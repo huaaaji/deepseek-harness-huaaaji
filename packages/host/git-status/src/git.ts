@@ -1,11 +1,12 @@
 /** Minimal git runner and porcelain-v2 parser for the status Remote. */
 
 import { spawn } from 'node:child_process'
+import { existsSync } from 'node:fs'
 import type {
   GitBranchState, GitHeadState, GitStatusEntry, GitStatusFileState, GitStatusFailure,
 } from './types.ts'
 
-/** Upper bound for one git invocation; a hung index.lock must not wedge the GUI. */
+/** Default kill-after deadline for one git read; the `timeoutMs` config overrides it. */
 export const GIT_TIMEOUT_MS = 15_000
 
 /** One terminated child-process run. */
@@ -18,32 +19,71 @@ export interface CommandOutcome {
   readonly stderr: string
   /** Spawn failure (ENOENT for a missing git), or null. */
   readonly spawnError: NodeJS.ErrnoException | null
+  /**
+   * True when stdout reached the requested character budget and the child was
+   * killed, so `stdout` holds a prefix of the full output. Only a run that
+   * passed `maxStdoutChars` can set it.
+   */
+  readonly truncated: boolean
+  /** True when the child never started because `cwd` is not an existing directory. */
+  readonly directoryMissing: boolean
+}
+
+/** One git invocation's budget. */
+export interface GitRunOptions {
+  /** Kill-after deadline; defaults to {@link GIT_TIMEOUT_MS}. */
+  readonly timeoutMs?: number
+  /**
+   * Character budget for stdout. A read past it stops and kills the child, so
+   * one oversized blob cannot grow the host's heap to the file size; the
+   * outcome then reports `truncated`.
+   */
+  readonly maxStdoutChars?: number
 }
 
 /**
- * Run one git command with a hard timeout.
+ * Run one git command with a hard timeout and an optional stdout budget.
+ *
+ * Every invocation runs in the C locale: this package reads git's diagnostics
+ * (to tell an absent path from an unreadable object) and shows git's first
+ * stderr line as a failure message, so a translated message would make the
+ * same repository read differently per host environment. Repository content is
+ * unaffected — paths, author names, and ISO dates do not follow the locale.
  * @param args - arguments after `git`.
- * @param cwd - directory the child runs in.
- * @param timeoutMs - kill-after deadline; tests shorten it to exercise the timeout arm.
+ * @param cwd - directory the child runs in; a missing directory reports
+ * `directoryMissing` instead of a spawn error, because git reports both as
+ * ENOENT and only the caller can name the reason.
+ * @param options - kill-after deadline and stdout character budget.
  * @returns the terminated outcome; never throws.
  */
 export function runGit(
   args: readonly string[],
   cwd: string,
-  timeoutMs: number = GIT_TIMEOUT_MS,
+  options: GitRunOptions = {},
 ): Promise<CommandOutcome> {
+  const { timeoutMs = GIT_TIMEOUT_MS, maxStdoutChars } = options
   return new Promise((resolve) => {
     let settled = false
+    let truncated = false
     let child: ReturnType<typeof spawn> | null = null
     try {
       child = spawn('git', [...args], {
         cwd,
         stdio: ['ignore', 'pipe', 'pipe'],
         windowsHide: true,
+        env: { ...process.env, LC_ALL: 'C' },
       })
       /* v8 ignore start -- spawn throws synchronously only for malformed arguments; every real failure arrives through the error event. */
     } catch (error) {
-      resolve({ code: null, signal: null, stdout: '', stderr: '', spawnError: asErrno(error) })
+      resolve({
+        code: null,
+        signal: null,
+        stdout: '',
+        stderr: '',
+        spawnError: asErrno(error),
+        truncated: false,
+        directoryMissing: false,
+      })
       return
       /* v8 ignore stop */
     }
@@ -60,24 +100,58 @@ export function runGit(
     let stdout = ''
     let stderr = ''
     child.on('error', (error) => {
-      finish({ code: null, signal: null, stdout, stderr, spawnError: asErrno(error) })
+      const errno = asErrno(error)
+      // git reports a missing binary and a missing working directory through
+      // the same ENOENT; only this side knows which one the caller asked for.
+      const missingDirectory = errno.code === 'ENOENT' && !existsSync(cwd)
+      finish({
+        code: null,
+        signal: null,
+        stdout,
+        stderr,
+        spawnError: missingDirectory ? null : errno,
+        truncated,
+        directoryMissing: missingDirectory,
+      })
     })
     // `exit` (not `close`): an `!alias` git command runs through a shell whose
     // children inherit the stdio pipes, so `close` would wait for those
     // grandchildren to finish even after the git process itself is gone.
     child.on('exit', (code, signal) => {
-      finish({ code, signal, stdout, stderr, spawnError: null })
+      finish({ code, signal, stdout, stderr, spawnError: null, truncated, directoryMissing: false })
     })
     const stdoutStream = child.stdout
     const stderrStream = child.stderr
     /* v8 ignore start -- the pipe stdio configuration always yields both streams; the guard is type-level defense. */
     if (stdoutStream === null || stderrStream === null) {
-      finish({ code: null, signal: null, stdout: '', stderr: '', spawnError: asErrno(new Error('stdio streams unavailable')) })
+      finish({ code: null, signal: null, stdout: '', stderr: '', spawnError: asErrno(new Error('stdio streams unavailable')), truncated: false, directoryMissing: false })
       return
     }
     /* v8 ignore stop */
-    stdoutStream.on('data', (chunk: Buffer) => { stdout += chunk.toString('utf8') })
-    stderrStream.on('data', (chunk: Buffer) => { stderr += chunk.toString('utf8') })
+    // Decoding at the stream keeps a multi-byte character split across two
+    // pipe chunks from becoming replacement characters.
+    stdoutStream.setEncoding('utf8')
+    stderrStream.setEncoding('utf8')
+    stdoutStream.on('data', (chunk: string) => {
+      if (maxStdoutChars === undefined) {
+        stdout += chunk
+        return
+      }
+      const room = maxStdoutChars - stdout.length
+      if (chunk.length <= room) {
+        stdout += chunk
+        return
+      }
+      // Past the budget the remaining room is spent once; a chunk that arrives
+      // after the kill leaves the capped prefix unchanged.
+      stdout += room > 0 ? chunk.slice(0, room) : ''
+      // A cut through a surrogate pair would leave one lone code unit.
+      const last = stdout.charCodeAt(stdout.length - 1)
+      if (last >= 0xd800 && last <= 0xdbff) stdout = stdout.slice(0, -1)
+      truncated = true
+      child.kill('SIGKILL')
+    })
+    stderrStream.on('data', (chunk: string) => { stderr += chunk })
   })
 }
 
@@ -89,12 +163,22 @@ function asErrno(error: unknown): NodeJS.ErrnoException {
   /* v8 ignore stop */
 }
 
-/** Map a failed git run onto the wire failure type. */
+/**
+ * Map a failed git run onto the wire failure type. `directoryMissing` and a
+ * spawn-time ENOENT are reported separately, because git uses the same errno
+ * for a missing binary and a missing working directory.
+ * @param outcome - the terminated run.
+ * @param fallback - message used when git printed no diagnostic line.
+ * @param nonZeroCode - code for a plain non-zero exit; the caller names the
+ * read that failed, since the same exit status means different things per call.
+ * @returns the wire failure.
+ */
 export function failureOf(
   outcome: CommandOutcome,
   fallback: string,
   nonZeroCode: GitStatusFailure['code'] = 'not-a-repo',
 ): GitStatusFailure {
+  if (outcome.directoryMissing) return { code: 'not-a-repo', message: 'working directory does not exist' }
   const message = outcome.spawnError?.message
     ?? (outcome.stderr.trim().split('\n')[0] || fallback)
   if (outcome.spawnError !== null && outcome.spawnError.code === 'ENOENT') {
@@ -105,9 +189,18 @@ export function failureOf(
   return { code: 'git-error', message }
 }
 
-/** Whether one child-process run finished cleanly. */
+/**
+ * Whether one child-process run finished cleanly. A capped run that stopped at
+ * its budget reports failure here, because the exit status no longer reflects
+ * the command; a caller that asked for a cap reads `truncated` instead.
+ * @param outcome - the terminated run.
+ * @returns true when git did not deliver a complete, successful read.
+ */
 export function failedOutcome(outcome: CommandOutcome): boolean {
-  return outcome.spawnError !== null || outcome.code !== 0 || outcome.signal !== null
+  return outcome.directoryMissing
+    || outcome.spawnError !== null
+    || outcome.code !== 0
+    || outcome.signal !== null
 }
 
 /** Parsed porcelain-v2 `# branch.*` headers (mutable parse accumulator). */
@@ -130,13 +223,18 @@ const EMPTY_BRANCH: ParsedBranchHeader = { oid: null, name: null, upstream: null
 /**
  * Parse porcelain-v2 output into branch facts and per-file entries.
  * Paths are taken verbatim (the caller disables core.quotepath), so parsing
- * relies on the field layout, never on splitting the path itself.
+ * relies on the field layout, never on splitting the path itself. A path that
+ * git still C-quotes (one holding a quote, backslash, or control character)
+ * keeps its quoting; only a carriage return is stripped from the line, because
+ * a path may legitimately end in a space.
+ * @param output - raw stdout of `git status --porcelain=v2 --branch`.
+ * @returns the parsed branch header and file entries.
  */
 export function parsePorcelainV2(output: string): ParsedStatus {
   const branch: ParsedBranchHeader = { ...EMPTY_BRANCH }
   const entries: GitStatusEntry[] = []
   for (const rawLine of output.split('\n')) {
-    const line = rawLine.trimEnd()
+    const line = rawLine.endsWith('\r') ? rawLine.slice(0, -1) : rawLine
     if (line.startsWith('# ')) {
       parseBranchHeader(branch, line.slice(2))
       continue
@@ -271,7 +369,11 @@ function fileState(xy: string): GitStatusFileState {
   return 'modified'
 }
 
-/** Build the wire branch state from parsed headers. */
+/**
+ * Build the wire branch state from parsed headers.
+ * @param parsed - the `# branch.*` accumulator from {@link parsePorcelainV2}.
+ * @returns the branch facts the snapshot carries.
+ */
 export function branchStateOf(parsed: ParsedBranchHeader): GitBranchState {
   return {
     name: parsed.name,
@@ -281,7 +383,11 @@ export function branchStateOf(parsed: ParsedBranchHeader): GitBranchState {
   }
 }
 
-/** Parse the `%h<US>%s` head-teaser line. */
+/**
+ * Parse the `%h<US>%s` head-teaser line.
+ * @param line - the single log line, already trimmed of its terminator.
+ * @returns the short hash and subject, or null when the line is not that pair.
+ */
 export function parseHeadTeaser(line: string): GitHeadState | null {
   const separator = line.indexOf('\x1f')
   if (separator === -1) return null

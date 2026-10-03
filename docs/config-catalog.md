@@ -1420,6 +1420,41 @@ export interface Config {
 ```
 <!-- END GENERATED config-catalog:@deepseek-ai/dsh-host-frontend-static -->
 
+<!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-host-git-status -->
+<a id="deepseek-aidsh-host-git-status"></a>
+
+## `@deepseek-ai/dsh-host-git-status`
+
+- `source`: [`packages/host/git-status/src/index.ts:33`](../packages/host/git-status/src/index.ts)
+
+```ts config-catalog
+/**
+ * Deployment limits for the working-tree reads. Each bound is enforced while
+ * git is read, never after the whole output has been buffered.
+ */
+export interface Config {
+  /** Kill-after deadline for one git invocation, in milliseconds. */
+  readonly timeoutMs: number
+  /** Largest history page the Remote accepts; a larger request is clamped. */
+  readonly historyLimit: number
+  /** Per-side character budget for one file diff read. */
+  readonly diffBytesLimit: number
+  /**
+   * Directory levels below the requested directory that repository discovery
+   * searches, mirroring `git.repositoryScanMaxDepth`: `1` inspects the
+   * immediate subdirectories, `0` skips discovery entirely, and `-1` walks the
+   * whole subtree.
+   */
+  readonly scanDepth: number
+  /**
+   * Child directory names discovery never enters, matched exactly by directory
+   * name (not by glob). The default keeps dependency trees out of the walk.
+   */
+  readonly scanIgnoredFolders: string[]
+}
+```
+<!-- END GENERATED config-catalog:@deepseek-ai/dsh-host-git-status -->
+
 <!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-host-open-in-app -->
 <a id="deepseek-aidsh-host-open-in-app"></a>
 
@@ -4350,6 +4385,7 @@ These load from a `cordis.yml` entry with no `config:` block; they declare no co
 | `@deepseek-ai/dsh-client-ui-deliverables` | `systemPrompt` · `connection` · `sessionQuery` · `sessionController` · `workspaceFiles` · `fs` · `sandboxPolicy` · `workspaceChanges` | [`packages/client/ui-deliverables/src/index.ts`](../packages/client/ui-deliverables/src/index.ts) |
 | `@deepseek-ai/dsh-client-ui-directory-picker-browse` | — | [`packages/client/ui-directory-picker-browse/src/index.ts`](../packages/client/ui-directory-picker-browse/src/index.ts) |
 | `@deepseek-ai/dsh-client-ui-directory-picker-native` | — | [`packages/client/ui-directory-picker-native/src/index.ts`](../packages/client/ui-directory-picker-native/src/index.ts) |
+| `@deepseek-ai/dsh-client-ui-git-status` | — | [`packages/extensions/ui-git-status/src/index.ts`](../packages/extensions/ui-git-status/src/index.ts) |
 | `@deepseek-ai/dsh-client-ui-goal` | — | [`packages/client/ui-goal/src/index.ts`](../packages/client/ui-goal/src/index.ts) |
 | `@deepseek-ai/dsh-client-ui-input-trigger` | — | [`packages/client/ui-input-trigger/src/index.ts`](../packages/client/ui-input-trigger/src/index.ts) |
 | `@deepseek-ai/dsh-client-ui-jobs` | — | [`packages/client/ui-jobs/src/index.ts`](../packages/client/ui-jobs/src/index.ts) |

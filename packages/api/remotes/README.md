@@ -1,6 +1,6 @@
 ---
 description: "Application Remote assembly: selects typed Host capabilities and forwarded events for Client consumers."
-kind: "package-reference"
+kind: "package-bundle"
 ---
 
 # @deepseek-ai/dsh-api-remotes
@@ -28,6 +28,8 @@ Two-sided BFF for Host Remote capabilities selected by this application. The Hos
 ## Use this package
 
 [`@deepseek-ai/dsh-api-session-controller`](../session-controller/README.md) owns Agent and Session identity policy, including the Typert lookup resolvers used by other namespaces. This package only selects and mounts that generated Session contribution; it does not duplicate activation policy.
+
+This package is also an installable profile layer: its manifest declares `dsh.bundle.patch`, so the Web Plugins page (or `dsh plugin --profile <name> add <spec>`) can install it into a profile. Installing this assembly profile-locally is what lets it mount a Remote method a newer Host package contributes while the application still ships the previous assembly; the layer declares no rows, because the composition that ships the assembly already declares them.
 
 The Client assembly mounts Office conversion, Commands, credentials, settings, Goal, Schedule, dynamic Cordis, file and Session references, read-only Host plugin inventory, plugin-installation registry response comparison, message feedback, permission presets, Session Controller, subagents, and Workspace Controller contributions. The `permissionPresets` namespace returns the complete process-level catalog used by current-session controls. Cordis effect ownership withdraws every contribution when this assembly unloads, while `@deepseek-ai/dsh-api-gateway/client` owns descriptor validation, traced namespace Services, direct and scoped methods, invocation, streams, and cancellation. The Client entry consumes the shared `TypertClientRemote` interface through Cordis and does not import the concrete Gateway. It re-exports the Gateway Client face's declaration merges type-only, so a consumer reaching the forwarded-event vocabulary through this facade gains no runtime edge to the Gateway implementation.
 
@@ -58,6 +60,8 @@ This package's root `tsconfig.json` is only a solution that references `tsconfig
 That exception is not just a `files` entry. The root `tsconfig.base.json` maps `@deepseek-ai/dsh-api-remotes/types` to `src/types.ts` — the source plane, like every other workspace subpath and unlike the generated `/remote` artifacts, which have no `paths` entry and resolve through `exports` to built output. Both faces therefore admit the same allowlist and type projection into their own programs and emit byte-identical `remote-events` and `types` outputs into `lib/types`; the `.tsbuildinfo` files stay independent. No gate enforces the faces' source-file disjointness — `scripts/project-reference-faces.ts` only checks that a reference into a split project names the matching face — so this paragraph records why the double listing is intentional.
 
 The package-local `clientBundle(..., { hostPhase: true })` makes Host tsdown bundle the Host entry and the later Client tsdown bundle only the browser entry. Ordinary Client plugins remain single Client projects and produce both their Node loader entry and browser bundle during Client tsdown; split only when the two source sets require different compiler faces.
+
+Adding or removing a method in a selected Host package changes this bundle without changing this package's sources, because the browser entry inlines each generated `/remote` declaration. Rebuild the Client face (`pnpm run build:lib:client`, or a full `pnpm run build`) whenever a selected Host package's Remote surface changes: a stale `lib/client.js` mounts the previous method set, and a caller built against the new declaration fails at call time with `ctx.remote.<namespace>.<method> is not a function` on a page that looks otherwise up to date.
 
 <a id="model-experience"></a>
 ## Model Experience

@@ -6,7 +6,7 @@ import {
 describe('failureOf', () => {
   it('reports git-unavailable for an ENOENT spawn error', () => {
     const outcome = {
-      code: null, signal: null, stdout: '', stderr: '',
+      code: null, signal: null, stdout: '', stderr: '', truncated: false, directoryMissing: false,
       spawnError: Object.assign(new Error('spawn git ENOENT'), { code: 'ENOENT' }) as NodeJS.ErrnoException,
     }
     expect(failureOf(outcome, 'fallback')).toEqual({
@@ -18,6 +18,7 @@ describe('failureOf', () => {
   it('reports timeout when the child was killed by a signal', () => {
     const outcome = {
       code: null, signal: 'SIGKILL' as NodeJS.Signals, stdout: '', stderr: '', spawnError: null,
+      truncated: false, directoryMissing: false,
     }
     expect(failureOf(outcome, 'fallback').code).toBe('timeout')
   })
@@ -25,6 +26,7 @@ describe('failureOf', () => {
   it('reports not-a-repo for a non-zero exit', () => {
     const outcome = {
       code: 128, signal: null, stdout: '', stderr: 'fatal: not a git repository', spawnError: null,
+      truncated: false, directoryMissing: false,
     }
     expect(failureOf(outcome, 'fallback')).toEqual({
       code: 'not-a-repo',
@@ -32,9 +34,23 @@ describe('failureOf', () => {
     })
   })
 
+  it('names a missing working directory instead of a missing git binary', () => {
+    // git reports a missing cwd and a missing binary through the same ENOENT,
+    // so runGit marks the directory case and failureOf keeps them apart.
+    const outcome = {
+      code: null, signal: null, stdout: '', stderr: '', spawnError: null,
+      truncated: false, directoryMissing: true,
+    }
+    expect(failureOf(outcome, 'fallback')).toEqual({
+      code: 'not-a-repo',
+      message: 'working directory does not exist',
+    })
+  })
+
   it('falls back to the git-error code for a zero exit', () => {
     const outcome = {
       code: 0, signal: null, stdout: '', stderr: '', spawnError: null,
+      truncated: false, directoryMissing: false,
     }
     expect(failureOf(outcome, 'fallback')).toEqual({
       code: 'git-error',
@@ -119,6 +135,14 @@ describe('parsePorcelainV2', () => {
   it('keeps paths with spaces verbatim', () => {
     const parsed = parsePorcelainV2('1 M. N... 100644 100644 100644 0000000 1111111 docs/my file.md')
     expect(parsed.entries[0]?.path).toBe('docs/my file.md')
+  })
+
+  it('keeps a trailing space in a path and drops only a carriage return', () => {
+    const parsed = parsePorcelainV2([
+      '? trailing-space ',
+      '? crlf-only\r',
+    ].join('\n'))
+    expect(parsed.entries.map(entry => entry.path)).toEqual(['trailing-space ', 'crlf-only'])
   })
 
   it('ignores unrelated header lines', () => {

@@ -40,7 +40,7 @@ async function repo(): Promise<{ root: string; gateway: GitStatusGateway }> {
 }
 
 describe('GitStatusGateway', () => {
-  it('publishes the six direct methods under the gitStatus namespace', async () => {
+  it('publishes the direct methods under the gitStatus namespace', async () => {
     const { gateway } = await repo()
     expect(gateway.typertRemote).toMatchObject({
       serviceKey: 'gitStatus',
@@ -48,6 +48,7 @@ describe('GitStatusGateway', () => {
     })
     expect(remoteMethods(gateway)).toEqual([
       { method: 'status', invocation: { kind: 'direct' } },
+      { method: 'repositories', invocation: { kind: 'direct' } },
       { method: 'history', invocation: { kind: 'direct' } },
       { method: 'commitDetails', invocation: { kind: 'direct' } },
       { method: 'fileDiff', invocation: { kind: 'direct' } },
@@ -151,14 +152,51 @@ describe('GitStatusGateway', () => {
 
   it.skipIf(!gitAvailable)('kills a hung git run after the timeout', async () => {
     const { root } = await repo()
-    const outcome = await runGit(['-c', 'alias.slow=!sleep 30', 'slow'], root, 300)
+    const outcome = await runGit(['-c', 'alias.slow=!sleep 30', 'slow'], root, { timeoutMs: 300 })
     expect(outcome.signal).toBe('SIGKILL')
     expect(failureOf(outcome, 'fallback').code).toBe('timeout')
   })
 
-  it.skipIf(!gitAvailable)('reports an ENOENT spawn error when git is missing', async () => {
+  it.skipIf(!gitAvailable)('names a missing working directory instead of a missing git binary', async () => {
     const outcome = await runGit(['--version'], '/definitely/not/a/directory')
-    expect(outcome.spawnError?.code).toBe('ENOENT')
-    expect(failureOf(outcome, 'fallback').code).toBe('git-unavailable')
+    expect(outcome.directoryMissing).toBe(true)
+    expect(failureOf(outcome, 'fallback').code).toBe('not-a-repo')
+  })
+
+  it.skipIf(!gitAvailable)('reports git-unavailable when the binary is not on PATH', async () => {
+    const { root } = await repo()
+    const path = process.env.PATH
+    // The cwd exists, so the same ENOENT can only mean the binary is missing.
+    process.env.PATH = ''
+    try {
+      const outcome = await runGit(['--version'], root)
+      expect(outcome.directoryMissing).toBe(false)
+      expect(outcome.spawnError?.code).toBe('ENOENT')
+      expect(failureOf(outcome, 'fallback').code).toBe('git-unavailable')
+    } finally {
+      process.env.PATH = path
+    }
+  })
+
+  it.skipIf(!gitAvailable)('reports a spawn failure when the working directory is a file', async () => {
+    const { root } = await repo()
+    // A path that exists but is not a directory reaches spawn and fails there.
+    const outcome = await runGit(['--version'], join(root, 'tracked.txt'))
+    expect(outcome.directoryMissing).toBe(false)
+    expect(outcome.spawnError?.code).toBe('ENOTDIR')
+    expect(failureOf(outcome, 'fallback').code).toBe('git-error')
+  })
+
+  it.skipIf(!gitAvailable)('stops a capped read at its budget without splitting a character', async () => {
+    const { root } = await repo()
+    writeFileSync(join(root, 'emoji.txt'), 'a\u{1F600}b\n')
+    await runGit(['add', 'emoji.txt'], root)
+    await runGit(['commit', '-qm', 'emoji'], root)
+    const hash = (await runGit(['rev-parse', 'HEAD'], root)).stdout.trim()
+    // The budget lands on the emoji's second code unit; a lone surrogate would
+    // reach the diff surface as a broken character.
+    const outcome = await runGit(['show', `${hash}:emoji.txt`], root, { maxStdoutChars: 2 })
+    expect(outcome.truncated).toBe(true)
+    expect(outcome.stdout).toBe('a')
   })
 })

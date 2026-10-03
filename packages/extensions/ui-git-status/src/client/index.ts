@@ -8,19 +8,14 @@ import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import type {} from '@deepseek-ai/dsh-client-ui-session/client'
 import type {} from '@deepseek-ai/dsh-client-ui-workspace/client'
 import type {} from '@deepseek-ai/dsh-client-ui-sidebar/client'
+// Type-only: pulls the SlotRegistry service merge (ctx.slots); the `gitStatus`
+// locale namespace merge lives with the dictionary in ./locales.ts.
 import type {} from '@deepseek-ai/dsh-client-ui-slots'
 import { GitStatusAction, type GitStatusActionInjected } from './GitStatusAction.tsx'
-import { en, zh, type GitStatusLocaleKey } from './locales.ts'
+import { en, zh } from './locales.ts'
 
 export type { GitStatusActionInjected, GitStatusActionProps } from './GitStatusAction.tsx'
 export type { GitStatusLocaleKey } from './locales.ts'
-
-declare module '@deepseek-ai/dsh-client-ui-slots' {
-  interface LocaleNamespaceMap {
-    /** Git working-tree widget copy. */
-    'gitStatus': GitStatusLocaleKey
-  }
-}
 
 /** Dictionary namespace owned by this plugin. */
 export const NS = 'gitStatus'
@@ -36,6 +31,8 @@ export function apply(ctx: ClientContext): void {
 
   const injected = (): GitStatusActionInjected => ({
     status: async cwd => call(ctx.remote.gitStatus.status({ cwd }), 'gitStatus.status'),
+    repositories: async cwd =>
+      call(ctx.remote.gitStatus.repositories({ cwd }), 'gitStatus.repositories'),
     history: async (cwd, count, skip) =>
       call(ctx.remote.gitStatus.history({ cwd, count, skip }), 'gitStatus.history'),
     commitDetails: async (cwd, hash) =>

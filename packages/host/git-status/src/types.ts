@@ -54,6 +54,8 @@ export type GitStatusFailureCode =
   | 'timeout'
   | 'git-error'
   | 'invalid-name'
+  | 'invalid-revision'
+  | 'invalid-path'
 
 /** Structured failure carried inside an otherwise complete snapshot. */
 export interface GitStatusFailure {
@@ -146,9 +148,40 @@ export interface GitCommitDetails {
   readonly remoteBranches: readonly string[]
 }
 
+/** Remote request: the directory whose repositories should be discovered. */
+export interface GitRepositoryScanRequest {
+  /** Absolute directory to scan; its own repository, if any, is resolved by git. */
+  readonly cwd: string
+}
+
+/** One repository the scan found. */
+export interface GitRepositoryRef {
+  /** Absolute working-tree root git reports for that repository. */
+  readonly root: string
+  /** Display name: the root directory's basename. */
+  readonly name: string
+}
+
+/** Repositories at or below one requested directory. */
+export interface GitRepositoryScanResult {
+  /**
+   * The enclosing repository first, then the subdirectory repositories the scan
+   * found, deduplicated by root. Empty when the directory holds no repository
+   * and no subdirectory does either.
+   */
+  readonly repositories: readonly GitRepositoryRef[]
+  /**
+   * Directory levels below the requested directory that produced this list, so
+   * a caller can explain an empty result; `-1` means the whole subtree was
+   * searched.
+   */
+  readonly scanDepth: number
+}
+
 /** Remote request: one commit's details and file statistics. */
 export interface GitCommitDetailsRequest {
   readonly cwd: string
+  /** Hexadecimal object name; any other value is refused as `invalid-revision`. */
   readonly hash: string
 }
 
@@ -161,6 +194,7 @@ export interface GitCommitDetailsResult {
 /** Remote request: the content of one file at a commit and its first parent. */
 export interface GitFileDiffRequest {
   readonly cwd: string
+  /** Hexadecimal object name; any other value is refused as `invalid-revision`. */
   readonly hash: string
   /** Repository-relative path at the commit (the new side). */
   readonly path: string
@@ -189,15 +223,20 @@ export type GitCheckoutKind = 'branch' | 'commit'
 export interface GitCheckoutRequest {
   readonly cwd: string
   readonly kind: GitCheckoutKind
-  /** Branch name, or commit hash when kind is commit. */
+  /**
+   * Branch name for `kind: 'branch'`, hexadecimal object name for
+   * `kind: 'commit'`; either shape is validated before git runs, so an
+   * option-shaped value is refused rather than reaching git's argument parser.
+   */
   readonly target: string
 }
 
 /** Remote request: create a branch at a commit without checking it out. */
 export interface GitCreateBranchRequest {
   readonly cwd: string
+  /** Branch name; refused as `invalid-name` when it is not a usable ref name. */
   readonly name: string
-  /** Hash the new branch points at. */
+  /** Hexadecimal object name the new branch points at; refused as `invalid-revision` otherwise. */
   readonly atHash: string
 }
 

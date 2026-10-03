@@ -1,0 +1,46 @@
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write packages/host/git-status/README.md
+/:
+  en: 2b177e24899741ab
+  zh: af0c160ae3d1e44c
+/deepseek-ai-dsh-host-git-status:
+  en: 7359fcd70c44fe4d
+  zh: ef1b06bf00689202
+/deepseek-ai-dsh-host-git-status/summary:
+  en: 52273dab40e56cd3
+  zh: eee245ad2f9f2142
+/deepseek-ai-dsh-host-git-status/table-of-contents:
+  en: d152484eb41ac6b4
+  zh: 09388d293f9be9cb
+/deepseek-ai-dsh-host-git-status/use-this-package:
+  en: d9ecaced1c46b6d4
+  zh: cf586cf120a47813
+/deepseek-ai-dsh-host-git-status/use-this-package/minimal-configuration:
+  en: 7e61bf7f5e3c83be
+  zh: 9eb9f35d535fed47
+/deepseek-ai-dsh-host-git-status/use-this-package/remotes:
+  en: d079ec0401e04dd7
+  zh: 5360330c070ca973
+/deepseek-ai-dsh-host-git-status/use-this-package/wire-validation:
+  en: 0ba82061ed1ca7e7
+  zh: 3dfc0a0fe104536d
+/deepseek-ai-dsh-host-git-status/understand-the-implementation:
+  en: da8437d9d6236d27
+  zh: dcd7b79446aab1c4
+/deepseek-ai-dsh-host-git-status/further-exploration:
+  en: f7324631e335bf9d
+  zh: f5fe7691241de318
+/deepseek-ai-dsh-host-git-status/model-experience:
+  en: 4814ef59a6775fe4
+  zh: 3dd03503967dd107
+/deepseek-ai-dsh-host-git-status/model-experience/kv-cache-effect:
+  en: e11db98792836d5c
+  zh: 322135c388b2c42d
+/deepseek-ai-dsh-host-git-status/known-limitations-and-deferred-work:
+  en: d43dfe729edbe40b
+  zh: 2709d799a20f7b4b
+/deepseek-ai-dsh-host-git-status/known-limitations-and-deferred-work/dev-note:
+  en: 69aaa3c576bab769
+  zh: 19e50d0f3062655b

@@ -37,9 +37,6 @@
     },
     {
       "path": "../../client/ui-workspace"
-    },
-    {
-      "path": "../../runtime-diagnostics/invariants"
     }
   ]
 }

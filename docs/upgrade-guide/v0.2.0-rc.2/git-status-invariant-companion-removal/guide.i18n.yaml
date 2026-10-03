@@ -1,0 +1,16 @@
+# Bilingual-pair consistency record for guide.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write docs/upgrade-guide/v0.2.0-rc.2/git-status-invariant-companion-removal/guide.md
+/:
+  en: 5e237a4a5a480d76
+  zh: 35313cfdd5d53a2f
+/git-status-packages-drop-their-invariant-companion:
+  en: 4ec3854bb9da3e30
+  zh: cd36161dd08a2ae9
+/git-status-packages-drop-their-invariant-companion/change:
+  en: 5683ae3089f024e6
+  zh: 991d1aa85d659761
+/git-status-packages-drop-their-invariant-companion/migration:
+  en: b15c7e0caeb00906
+  zh: dd11dec65bef31d4
