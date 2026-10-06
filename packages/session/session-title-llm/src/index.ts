@@ -6,7 +6,6 @@
 
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
-import { createUserMessage, BlockAssembler } from '@deepseek-ai/dsh-llm'
 import type { ContextFormed } from '@deepseek-ai/dsh-llm'
 declare module '@deepseek-ai/dsh-llm' {
   interface MessageSourceMap {
@@ -14,21 +13,29 @@ declare module '@deepseek-ai/dsh-llm' {
   }
 }
 
-import type { FinishReason, GenerateOptions, Message } from '@deepseek-ai/dsh-llm'
-import { deadline, MAX_TIMER_DELAY_MS } from '@deepseek-ai/dsh-timeout'
+import type { Message } from '@deepseek-ai/dsh-llm'
 import { deepFreeze } from '@deepseek-ai/dsh-util-values'
 import type { SessionSeq } from '@deepseek-ai/dsh-session'
+import {
+  assertAuxiliaryTextLimits,
+  AuxiliaryTextLimitsFields,
+  resolveAuxiliaryTextRoute,
+  runAuxiliaryTextCall,
+} from '@deepseek-ai/dsh-auxiliary-text-call'
+import type { AuxiliaryTextLimits, AuxiliaryTextModelIdentity } from '@deepseek-ai/dsh-auxiliary-text-call'
 import {
   normalizeSessionTitle,
   SessionTitleProviderId,
 } from '@deepseek-ai/dsh-session-title'
 import type {
   SessionTitleAutomaticMode,
-  SessionTitleModelIdentity,
   SessionTitleProviderRequest,
   SessionTitleProviderResult,
   SessionTitleUserMessage,
 } from '@deepseek-ai/dsh-session-title'
+
+/** Feature label prefixed to every diagnostic this policy raises. */
+const LABEL = 'session-title-llm'
 
 /** Exact model-visible request recorded before one auxiliary title dispatch. */
 export interface SessionTitleLlmRequestEventData {
@@ -37,7 +44,7 @@ export interface SessionTitleLlmRequestEventData {
   /** Exact human `user/message` seqs represented in `messages`. */
   readonly messageSeqs: SessionSeq[]
   /** Exact auxiliary LLM route. */
-  readonly route: SessionTitleModelIdentity
+  readonly route: AuxiliaryTextModelIdentity
   /** Exact auxiliary system prompt. */
   readonly system: string
   /** Exact auxiliary message list. */
@@ -57,21 +64,11 @@ declare module '@deepseek-ai/dsh-session/types' {
 export const SESSION_TITLE_TIMEOUT_CODE = 'SESSION_TITLE_TIMEOUT'
 
 /** Required deployment policy for one model-backed title plugin. */
-export interface SessionTitleLlmConfig {
+export interface SessionTitleLlmConfig extends AuxiliaryTextLimits {
   /** Target word count for non-CJK titles. */
   readonly targetWords: number
   /** Target character count for Chinese, Japanese, or Korean titles. */
   readonly targetCjkCharacters: number
-  /** Maximum UTF-8 bytes in the final JSON-framed user prompt. */
-  readonly maxInputBytes: number
-  /** Auxiliary generation output-token cap. */
-  readonly maxOutputTokens: number
-  /** End-to-end auxiliary request deadline in milliseconds. */
-  readonly timeoutMs: number
-  /** Optional explicit provider route; must be paired with `model`. */
-  readonly provider?: string
-  /** Optional explicit model id; must be paired with `provider`. */
-  readonly model?: string
 }
 
 /** Validated immutable model-provider policy. */
@@ -81,11 +78,11 @@ export interface ResolvedSessionTitleLlmConfig extends SessionTitleLlmConfig {}
 export const SessionTitleLlmConfigFields = {
   targetWords: z.number().step(1).min(1).required(),
   targetCjkCharacters: z.number().step(1).min(1).required(),
-  maxInputBytes: z.number().step(1).min(1).required(),
-  maxOutputTokens: z.number().step(1).min(1).required(),
-  timeoutMs: z.number().step(1).min(1).max(MAX_TIMER_DELAY_MS).required(),
-  provider: z.string(),
-  model: z.string(),
+  maxInputBytes: AuxiliaryTextLimitsFields.maxInputBytes,
+  maxOutputTokens: AuxiliaryTextLimitsFields.maxOutputTokens,
+  timeoutMs: AuxiliaryTextLimitsFields.timeoutMs,
+  provider: AuxiliaryTextLimitsFields.provider,
+  model: AuxiliaryTextLimitsFields.model,
 }
 
 /** Shared Loader schema with no library defaults. */
@@ -101,13 +98,6 @@ const CONFIG_KEYS: ReadonlySet<string> = new Set([
   'provider',
   'model',
 ])
-
-/** Validate one positive integer limit. */
-function assertPositiveInteger(name: string, value: number): void {
-  if (!Number.isInteger(value) || value <= 0) {
-    throw new Error(`session-title-llm: ${name} must be a positive integer`)
-  }
-}
 
 /**
  * Validate and detach required model-provider configuration.
@@ -125,24 +115,13 @@ export function resolveSessionTitleLlmConfig(
   for (const key of Object.keys(value)) {
     if (!CONFIG_KEYS.has(key)) throw new Error(`session-title-llm: unknown config key "${key}"`)
   }
-  assertPositiveInteger('targetWords', value.targetWords)
-  assertPositiveInteger('targetCjkCharacters', value.targetCjkCharacters)
-  assertPositiveInteger('maxInputBytes', value.maxInputBytes)
-  assertPositiveInteger('maxOutputTokens', value.maxOutputTokens)
-  assertPositiveInteger('timeoutMs', value.timeoutMs)
-  if (value.timeoutMs > MAX_TIMER_DELAY_MS) {
-    throw new Error(`session-title-llm: timeoutMs must not exceed ${MAX_TIMER_DELAY_MS}`)
+  if (!Number.isInteger(value.targetWords) || value.targetWords <= 0) {
+    throw new Error('session-title-llm: targetWords must be a positive integer')
   }
-  const hasProvider = value.provider !== undefined
-  const hasModel = value.model !== undefined
-  if (hasProvider !== hasModel) {
-    throw new Error('session-title-llm: provider and model must be supplied together')
+  if (!Number.isInteger(value.targetCjkCharacters) || value.targetCjkCharacters <= 0) {
+    throw new Error('session-title-llm: targetCjkCharacters must be a positive integer')
   }
-  if (hasProvider
-    && (typeof value.provider !== 'string' || value.provider.length === 0
-      || typeof value.model !== 'string' || value.model.length === 0)) {
-    throw new Error('session-title-llm: provider and model overrides must be non-empty strings')
-  }
+  assertAuxiliaryTextLimits(LABEL, value)
   return deepFreeze({ ...value })
 }
 
@@ -177,20 +156,6 @@ export function registerSessionTitleLlmProvider(
   })
 }
 
-/** Resolve the explicit pair or the exact route captured from `request/header`. */
-function resolveRoute(
-  config: ResolvedSessionTitleLlmConfig,
-  request: SessionTitleProviderRequest,
-): SessionTitleModelIdentity {
-  if (config.provider !== undefined && config.model !== undefined) {
-    return { provider: config.provider, model: config.model }
-  }
-  if (request.route === undefined) {
-    throw new Error('session-title-llm: no logged request route is available; configure provider and model together')
-  }
-  return request.route
-}
-
 /** Stable language-aware system instruction shared by both provider plugins. */
 function systemPrompt(config: ResolvedSessionTitleLlmConfig): string {
   return [
@@ -204,26 +169,6 @@ function systemPrompt(config: ResolvedSessionTitleLlmConfig): string {
 /** Frame exact messages as JSON so user text cannot break structural delimiters. */
 function frameMessages(messages: readonly SessionTitleUserMessage[]): string {
   return `Generate the session title from this JSON array of human messages:\n${JSON.stringify(messages)}`
-}
-
-/** Translate terminal finish reasons into an auxiliary-call failure. */
-function finishError(finish: FinishReason): Error | undefined {
-  switch (finish.kind) {
-    case 'stop':
-      return undefined
-    case 'error':
-    case 'aborted': {
-      const error = new Error(finish.failure.message) as Error & { code?: string }
-      error.code = finish.failure.code
-      return error
-    }
-    case 'max-tokens':
-      return new Error('session-title-llm: title output reached maxOutputTokens')
-    case 'tool-calls':
-      return new Error('session-title-llm: title model unexpectedly requested a tool')
-    default:
-      return new Error(`session-title-llm: unsupported finish reason "${String((finish as { kind?: unknown }).kind)}"`)
-  }
 }
 
 /**
@@ -247,57 +192,33 @@ export async function generateSessionTitleWithLlm(
     throw new Error('session-title-llm: at least one source message is required')
   }
   const framedInput = frameMessages(selectedMessages)
-  const inputBytes = Buffer.byteLength(framedInput, 'utf8')
-  if (inputBytes > config.maxInputBytes) {
-    throw new Error(`session-title-llm: input is ${inputBytes} bytes, exceeding maxInputBytes ${config.maxInputBytes}`)
-  }
-  const route = resolveRoute(config, request)
-  const messages: Message[] = [createUserMessage({
-    content: [{ type: 'text', text: framedInput }],
-    source: { kind: 'dsh-session-title-llm' },
-  })]
-  const system = systemPrompt(config)
-  using callDeadline = deadline(request.signal, config.timeoutMs, SESSION_TITLE_TIMEOUT_CODE)
-  const options: GenerateOptions = deepFreeze({
-    provider: route.provider,
-    model: route.model,
-    messages,
-    system,
-    maxTokens: config.maxOutputTokens,
-    sessionId: request.session.id,
-    purpose: 'session-title',
-    signal: callDeadline.signal,
-  })
-  request.session.append('session/title-llm-request', {
-    titleProvider,
-    messageSeqs: selectedMessages.map(message => message.seq),
+  const route = resolveAuxiliaryTextRoute(LABEL, config, request.route)
+  const messageSeqs = selectedMessages.map(message => message.seq)
+  const text = await runAuxiliaryTextCall(ctx, {
+    label: LABEL,
+    session: request.session,
     route,
-    system,
-    messages,
+    system: systemPrompt(config),
+    framedInput,
+    maxInputBytes: config.maxInputBytes,
     maxTokens: config.maxOutputTokens,
+    timeoutMs: config.timeoutMs,
+    timeoutCode: SESSION_TITLE_TIMEOUT_CODE,
+    purpose: 'session-title',
+    source: { kind: 'dsh-session-title-llm' },
+    signal: request.signal,
+    record: ({ system, messages, maxTokens }) => {
+      request.session.append('session/title-llm-request', {
+        titleProvider,
+        messageSeqs,
+        route,
+        system,
+        messages,
+        maxTokens,
+      })
+    },
   })
-  callDeadline.signal.throwIfAborted()
-  const assembler = new BlockAssembler()
-  for await (const chunk of ctx.llm.stream(options)) {
-    callDeadline.signal.throwIfAborted()
-    assembler.push(chunk)
-  }
-  callDeadline.signal.throwIfAborted()
-  const terminalError = finishError(assembler.finish)
-  if (terminalError !== undefined) throw terminalError
-  const blocks = assembler.blocks()
-  if (blocks.some(block => block.type === 'tool-call')) {
-    throw new Error('session-title-llm: title output must contain text only')
-  }
-  const text = blocks
-    .filter((block): block is Extract<(typeof blocks)[number], { type: 'text' }> => block.type === 'text')
-    .map(block => block.text)
-    .join(' ')
   const title = normalizeSessionTitle(text, Number.MAX_SAFE_INTEGER)
   if (title.length === 0) throw new Error('session-title-llm: title model produced no text')
-  return {
-    title,
-    messageSeqs: selectedMessages.map(message => message.seq),
-    model: route,
-  }
+  return { title, messageSeqs, model: route }
 }

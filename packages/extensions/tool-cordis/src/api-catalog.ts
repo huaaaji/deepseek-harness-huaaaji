@@ -2345,6 +2345,32 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
     ],
   },
   {
+    key: 'sessionRecap',
+    summary: 'Log-backed recap fold plus asynchronous provider generation.',
+    description: 'Log-backed recap fold plus asynchronous provider generation.',
+    methods: [
+      {
+        signature: 'get(session: Session): SessionRecapSnapshot | undefined',
+        description: 'Read the latest accepted recap from one live or replayed session.',
+        parameters: [{ name: 'session', description: 'session whose log is the recap source of truth.' }],
+        returns: 'latest recap snapshot, or `undefined` before the first recap.',
+      },
+      {
+        signature: 'async generate(session: Session, signal?: AbortSignal): Promise<SessionRecapSnapshot>',
+        description: 'Generate and accept one recap of the window after the latest accepted recap. A newer request supersedes an in-flight one, whose cancellation stays separate from expected failures.',
+        parameters: [{ name: 'session', description: 'exact live session to recap.' }, { name: 'signal', description: 'optional caller cancellation.' }],
+        returns: 'the accepted recap snapshot.',
+        throws: ['{SessionRecapError} with `unavailable` when no provider is registered or it is disposing, `empty` when the window holds no digest entry, and `generation` when the provider produced nothing acceptable.', '{Error} when the session is not live or the service is disposed; an aborted request preserves its exact abort reason.'],
+      },
+      {
+        signature: 'register(provider: SessionRecapProvider): () => Promise<void>',
+        description: 'Register the sole optional recap provider. Disposal aborts its in-flight work before another provider may register.',
+        parameters: [{ name: 'provider', description: 'provider identity and generation function.' }],
+        returns: 'exact Cordis effect disposer, which settles after active calls quiesce.',
+      },
+    ],
+  },
+  {
     key: 'sessionReferenceResolver',
     summary: 'Exact-read consumer that prepares immutable cross-session message context.',
     description: 'Exact-read consumer that prepares immutable cross-session message context.',
@@ -5074,7 +5100,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'DeepSeekLlmApiExtensionRequest',
-    declaration: 'export interface DeepSeekLlmApiExtensionRequest {\n    readonly body: Readonly<Record<string, DeepSeekLlmApiJson>>;\n    readonly sessionId?: string;\n    readonly purpose?: \'compaction\' | \'session-title\';\n    readonly signal: AbortSignal;\n}',
+    declaration: 'export interface DeepSeekLlmApiExtensionRequest {\n    readonly body: Readonly<Record<string, DeepSeekLlmApiJson>>;\n    readonly sessionId?: string;\n    readonly purpose?: \'compaction\' | \'session-title\' | \'session-recap\';\n    readonly signal: AbortSignal;\n}',
   },
   {
     name: 'DeepSeekLlmApiJson',
@@ -5318,7 +5344,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'GenerateOptions',
-    declaration: 'export interface GenerateOptions {\n    provider: string;\n    model: string;\n    reasoningEffort?: ReasoningEffortId;\n    messages: RequestMessage[];\n    system?: string;\n    tools?: ToolSchema[];\n    toolHistory?: ToolHistory;\n    temperature?: number;\n    maxTokens?: number;\n    stop?: string[];\n    signal?: AbortSignal;\n    sessionId?: Branded<\'SessionId\'>;\n    purpose?: \'compaction\' | \'session-title\';\n}',
+    declaration: 'export interface GenerateOptions {\n    provider: string;\n    model: string;\n    reasoningEffort?: ReasoningEffortId;\n    messages: RequestMessage[];\n    system?: string;\n    tools?: ToolSchema[];\n    toolHistory?: ToolHistory;\n    temperature?: number;\n    maxTokens?: number;\n    stop?: string[];\n    signal?: AbortSignal;\n    sessionId?: Branded<\'SessionId\'>;\n    purpose?: \'compaction\' | \'session-title\' | \'session-recap\';\n}',
   },
   {
     name: 'GenericCallView',
@@ -6931,6 +6957,46 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'SessionPromptValue',
     declaration: 'export interface SessionPromptValue {\n    readonly accepted: true;\n}',
+  },
+  {
+    name: 'SessionRecapEntry',
+    declaration: 'export interface SessionRecapEntry {\n    readonly seq: SessionSeq;\n    readonly kind: SessionRecapEntryKind;\n    readonly turn: number;\n    readonly name?: string;\n    readonly text: string;\n}',
+  },
+  {
+    name: 'SessionRecapEntryKind',
+    declaration: 'export type SessionRecapEntryKind = \'user\' | \'assistant\' | \'tool\' | \'notice\';',
+  },
+  {
+    name: 'SessionRecapEventData',
+    declaration: 'export interface SessionRecapEventData {\n    readonly text: string;\n    readonly source: SessionRecapSource;\n    readonly sourceSeqs: SessionSeq[];\n    readonly turnRange: SessionRecapTurnRange;\n}',
+  },
+  {
+    name: 'SessionRecapModelIdentity',
+    declaration: 'export interface SessionRecapModelIdentity {\n    readonly provider: string;\n    readonly model: string;\n}',
+  },
+  {
+    name: 'SessionRecapProvider',
+    declaration: 'export interface SessionRecapProvider {\n    readonly id: SessionRecapProviderId;\n    generate(request: SessionRecapProviderRequest): Promise<SessionRecapProviderResult>;\n}',
+  },
+  {
+    name: 'SessionRecapProviderRequest',
+    declaration: 'export interface SessionRecapProviderRequest {\n    readonly session: Session;\n    readonly entries: readonly SessionRecapEntry[];\n    readonly turnRange: SessionRecapTurnRange;\n    readonly route?: SessionRecapModelIdentity;\n    readonly signal: AbortSignal;\n}',
+  },
+  {
+    name: 'SessionRecapProviderResult',
+    declaration: 'export interface SessionRecapProviderResult {\n    readonly text: string;\n    readonly sourceSeqs: readonly SessionSeq[];\n    readonly model?: SessionRecapModelIdentity;\n}',
+  },
+  {
+    name: 'SessionRecapSnapshot',
+    declaration: 'export interface SessionRecapSnapshot extends SessionRecapEventData {\n    readonly eventSeq: SessionSeq;\n    readonly updatedAt: number;\n}',
+  },
+  {
+    name: 'SessionRecapSource',
+    declaration: 'export interface SessionRecapSource {\n    readonly kind: \'provider\';\n    readonly provider: SessionRecapProviderId;\n    readonly model?: SessionRecapModelIdentity;\n}',
+  },
+  {
+    name: 'SessionRecapTurnRange',
+    declaration: 'export interface SessionRecapTurnRange {\n    readonly first: number;\n    readonly last: number;\n}',
   },
   {
     name: 'SessionRecord',

@@ -107,6 +107,23 @@
     - id: session-turn-outline
       name: '@deepseek-ai/dsh-session-turn-outline'
 
+    # One recap of what happened while the user was away: an automatic one
+    # after a completed turn sits idle, and the human `/recap` command on
+    # demand. Both read the base-layer recap service; profiles without a
+    # client surface mount neither.
+    - id: session-recap-idle-llm
+      name: '@deepseek-ai/dsh-session-recap-idle-llm'
+      config:
+        minIdleMs: 180000
+        minTurns: 3
+        targetCharacters: 400
+        maxInputBytes: 8192
+        maxOutputTokens: 128
+        timeoutMs: 60000
+
+    - id: command-recap
+      name: '@deepseek-ai/dsh-command-recap'
+
     # Resolve bind host, SSH launch, and display once at boot, then mount the
     # matching dual-face directory picker. Mount -native or -browse directly in
     # an overlay to pin the interaction.

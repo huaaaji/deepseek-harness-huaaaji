@@ -502,6 +502,15 @@ const SERVICE_ROLES: ServiceRole[] = [
     note: 'Owns the deterministic fallback, latest-title fold, and sole optional asynchronous provider registration.',
   },
   {
+    key: 'sessionRecap',
+    pkg: 'session-recap',
+    title: 'Log-backed session recaps',
+    mode: 'seam',
+    implementations: ['session-recap-idle-llm'],
+    consumers: ['command-recap'],
+    note: 'Owns the covered-window digest, the accepted-recap fold, and sole optional asynchronous provider registration; the idle provider owns automatic cadence and the command owns explicit requests.',
+  },
+  {
     key: 'systemPrompt',
     pkg: 'system-prompt',
     title: 'System prompt assembly registry',

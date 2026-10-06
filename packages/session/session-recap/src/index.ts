@@ -23,7 +23,6 @@ export type {
 import { normalizeRecapEntry, normalizeSessionRecap } from './normalize.ts'
 import type {
   SessionRecapEntry,
-  SessionRecapEventData,
   SessionRecapModelIdentity,
   SessionRecapSnapshot,
   SessionRecapSource,
@@ -55,16 +54,6 @@ export interface Config {
 declare module '@deepseek-ai/cordis' {
   interface Context {
     sessionRecap: SessionRecapService
-  }
-}
-
-declare module '@deepseek-ai/dsh-session/types' {
-  interface SessionEventMap {
-    /**
-     * One accepted recap of a completed stretch of work. Log-only: it never
-     * enters the model surface or derived history.
-     */
-    'session/recap': SessionRecapEventData
   }
 }
 
@@ -302,7 +291,6 @@ export class SessionRecapService extends Service {
   private registration: ProviderRegistration | undefined
   private readonly work = new Map<Session, SessionRecapWorkState>()
   private readonly lifetime = new AbortController()
-  private readonly inFlight = new Set<Promise<unknown>>()
 
   constructor(ctx: Context, config: Config) {
     super(ctx, 'sessionRecap')
@@ -317,13 +305,14 @@ export class SessionRecapService extends Service {
     this.config = deepFreeze({ ...value })
 
     ctx.effect(() => async () => {
+      const registration = this.registration
       this.lifetime.abort(new Error('session-recap service disposed'))
-      if (this.registration !== undefined) this.registration.closing = true
+      if (registration !== undefined) registration.closing = true
       this.registration = undefined
       for (const state of this.work.values()) {
         state.active?.controller.abort(new Error('session-recap service disposed'))
       }
-      await this.drain(this.inFlight)
+      await this.drain(registration?.active)
       this.work.clear()
     }, 'sessionRecap lifecycle')
 
@@ -518,33 +507,27 @@ export class SessionRecapService extends Service {
     return state
   }
 
-  /** Retain one promise until settlement for service and provider teardown. */
+  /** Retain one provider call until its registration settles. */
   private track<T>(run: Promise<T>, registration: ProviderRegistration): Promise<T> {
-    this.inFlight.add(run)
     registration.active.add(run)
     const settled = (): void => {
-      this.inFlight.delete(run)
       registration.active.delete(run)
     }
     void run.then(settled, settled)
     return run
   }
 
-  /** Await every current and settling promise in one lifecycle registry. */
-  private async drain(active: Set<Promise<unknown>>): Promise<void> {
-    while (active.size > 0) await Promise.allSettled([...active])
-  }
-
-  /** Whether the owning plugin fiber can still start or commit recap work. */
-  private serviceActive(): boolean {
-    return !this.lifetime.signal.aborted
-      && this.ownerFiber.uid !== null
-      && this.ownerFiber.state === FiberState.ACTIVE
+  /** Await every retained call in one registration set. */
+  private async drain(active: Set<Promise<unknown>> | undefined): Promise<void> {
+    if (active !== undefined) await Promise.allSettled([...active])
   }
 
   /** Reject work once the owning plugin fiber has begun unloading. */
   private assertServiceActive(): void {
-    if (!this.serviceActive()) throw new Error('session-recap service disposed')
+    const unloading = this.lifetime.signal.aborted
+      || this.ownerFiber.uid === null
+      || this.ownerFiber.state !== FiberState.ACTIVE
+    if (unloading) throw new Error('session-recap service disposed')
   }
 
   /** Reject malformed provider registrations before publishing an effect. */

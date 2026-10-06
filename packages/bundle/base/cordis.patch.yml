@@ -68,6 +68,14 @@
         maxOutputTokens: 64
         timeoutMs: 60000
 
+    # Durable, user-facing recaps. The service is client-neutral; only a
+    # profile with a surface that displays recaps mounts a provider.
+    - id: session-recap
+      name: '@deepseek-ai/dsh-session-recap'
+      config:
+        maxBytes: 400
+        maxEntryBytes: 240
+
     - id: user-questions
       name: '@deepseek-ai/dsh-user-questions'
 

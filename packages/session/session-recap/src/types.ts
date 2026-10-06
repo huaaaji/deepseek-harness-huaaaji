@@ -81,3 +81,13 @@ export interface SessionRecapEntry {
   /** Entry text, already bounded to the configured per-entry limit. */
   readonly text: string
 }
+
+declare module '@deepseek-ai/dsh-session/types' {
+  interface SessionEventMap {
+    /**
+     * One accepted recap of a completed stretch of work. Log-only: it never
+     * enters the model surface or derived history.
+     */
+    'session/recap': SessionRecapEventData
+  }
+}

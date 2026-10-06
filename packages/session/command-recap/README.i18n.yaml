@@ -1,0 +1,67 @@
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write packages/session/command-recap/README.md
+/:
+  en: a32d5bbd160032ff
+  zh: ddd0b09f919bbbbc
+/deepseek-ai-dsh-command-recap:
+  en: ad740e7fac97665f
+  zh: 65387cb7bacb7906
+/deepseek-ai-dsh-command-recap/summary:
+  en: 0a163361957c2572
+  zh: faf123734463832a
+/deepseek-ai-dsh-command-recap/table-of-contents:
+  en: d152484eb41ac6b4
+  zh: 09388d293f9be9cb
+/deepseek-ai-dsh-command-recap/use-this-package:
+  en: 129859583d6cf4be
+  zh: 86210c2ba1f6ba63
+/deepseek-ai-dsh-command-recap/use-this-package/using-the-command:
+  en: 0fa79607f83d2966
+  zh: f678fe3c07534203
+/deepseek-ai-dsh-command-recap/use-this-package/what-you-see:
+  en: d3cdc4b627a7bd04
+  zh: 92315cec3fb5e388
+/deepseek-ai-dsh-command-recap/use-this-package/composing-the-command:
+  en: 7e53207dc2ff0a4e
+  zh: c5105f5f4340bd83
+/deepseek-ai-dsh-command-recap/use-this-package/what-happens-to-the-conversation:
+  en: e845f4b40de1b3b9
+  zh: 48b199e0d0a51a70
+/deepseek-ai-dsh-command-recap/understand-the-implementation:
+  en: 55197024cba97312
+  zh: ff3a096d2d46cd05
+/deepseek-ai-dsh-command-recap/understand-the-implementation/design-philosophy:
+  en: 04b3f437b813099c
+  zh: 5c65b4eb0b45cdde
+/deepseek-ai-dsh-command-recap/understand-the-implementation/failure-mapping:
+  en: f4a5a77f51f995d6
+  zh: 4bdf78bb44ab37c3
+/deepseek-ai-dsh-command-recap/understand-the-implementation/source-map:
+  en: 22c1de54a35ee7ee
+  zh: 8e5445f0507ce02c
+/deepseek-ai-dsh-command-recap/further-exploration:
+  en: 1caf0e7278c17cfe
+  zh: 3022068409416866
+/deepseek-ai-dsh-command-recap/model-experience:
+  en: 215e7ba838619b7b
+  zh: a311da3843709f90
+/deepseek-ai-dsh-command-recap/model-experience/human-recap-control:
+  en: b27da9f26c362049
+  zh: 533657ad716ad40c
+/deepseek-ai-dsh-command-recap/model-experience/human-recap-control/what-the-model-sees:
+  en: 728d272a4afbd9e3
+  zh: 80b29cfff6ed46af
+/deepseek-ai-dsh-command-recap/model-experience/human-recap-control/token-effect:
+  en: fc0b576aa6813a0f
+  zh: 8b4bd1d5f3a10357
+/deepseek-ai-dsh-command-recap/model-experience/human-recap-control/kv-cache-effect:
+  en: d71623c72f0ad522
+  zh: 08b7bbf69fef5d83
+/deepseek-ai-dsh-command-recap/known-limitations-and-deferred-work:
+  en: e7a84a6b6fb70591
+  zh: 8a0a1b21b57fae8b
+/deepseek-ai-dsh-command-recap/known-limitations-and-deferred-work/dev-note:
+  en: b16859330d77a2bb
+  zh: 612fc587dadff1cb

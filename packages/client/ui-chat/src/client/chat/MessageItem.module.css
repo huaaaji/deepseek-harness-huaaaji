@@ -195,6 +195,17 @@
   line-height: calc(24px + var(--dsh-content-font-delta, 0px));
 }
 
+/* Session recap: the compaction marker's row, with the covered turns and the
+   producing source disclosed under the full recap sentence. */
+.recapText {
+  overflow-wrap: anywhere;
+}
+
+.recapMeta {
+  margin-top: 2px;
+  color: var(--dsw-alias-label-secondary);
+}
+
 .retryRow {
   color: var(--dsw-alias-label-tertiary);
   font-size: var(--dsh-content-font-size-secondary, 13px);

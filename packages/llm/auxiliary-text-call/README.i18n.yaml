@@ -1,0 +1,64 @@
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write packages/llm/auxiliary-text-call/README.md
+/:
+  en: ac2467938fd21efc
+  zh: 673a898c33e0b1a1
+/deepseek-ai-dsh-auxiliary-text-call:
+  en: 05b9b6f1d0ca0c4e
+  zh: 2fa97858e6393032
+/deepseek-ai-dsh-auxiliary-text-call/summary:
+  en: 15c8abd5262ed8da
+  zh: 3122b245f5a2216c
+/deepseek-ai-dsh-auxiliary-text-call/table-of-contents:
+  en: d152484eb41ac6b4
+  zh: 09388d293f9be9cb
+/deepseek-ai-dsh-auxiliary-text-call/use-this-package:
+  en: 4fcfd1a1b5eb50d6
+  zh: f653c37bf651486f
+/deepseek-ai-dsh-auxiliary-text-call/use-this-package/entry-point:
+  en: 19a3af33a15a3e40
+  zh: 1ba5bb0492b41204
+/deepseek-ai-dsh-auxiliary-text-call/use-this-package/validating-limits-and-resolving-a-route:
+  en: 34bfe2d799343e06
+  zh: 9a5e9cf3ea0750a3
+/deepseek-ai-dsh-auxiliary-text-call/use-this-package/running-one-call:
+  en: e110728762941588
+  zh: 972f9f7abac051fe
+/deepseek-ai-dsh-auxiliary-text-call/understand-the-implementation:
+  en: 64623b5dfaa4fd25
+  zh: a037f40d0fc40c9b
+/deepseek-ai-dsh-auxiliary-text-call/understand-the-implementation/design-concept:
+  en: 76db92e59ace2c26
+  zh: bd10c32672ac3519
+/deepseek-ai-dsh-auxiliary-text-call/understand-the-implementation/source-map:
+  en: 4ad57ad8479d3cfa
+  zh: 44347f72798cddb9
+/deepseek-ai-dsh-auxiliary-text-call/understand-the-implementation/stream-and-finish-handling:
+  en: c45260a8cf5d80de
+  zh: f023d62825a92da2
+/deepseek-ai-dsh-auxiliary-text-call/further-exploration:
+  en: 77fe854261e3b15c
+  zh: 2525e29bf2cae238
+/deepseek-ai-dsh-auxiliary-text-call/model-experience:
+  en: 215e7ba838619b7b
+  zh: a311da3843709f90
+/deepseek-ai-dsh-auxiliary-text-call/model-experience/caller-framed-auxiliary-request:
+  en: 01cc69bc43c8293d
+  zh: 82a9fd2e46da2afe
+/deepseek-ai-dsh-auxiliary-text-call/model-experience/caller-framed-auxiliary-request/what-the-model-sees:
+  en: cc75c1ca48d9744a
+  zh: 96ab6411d5470037
+/deepseek-ai-dsh-auxiliary-text-call/model-experience/caller-framed-auxiliary-request/token-effect:
+  en: 77118e20fe54a9c0
+  zh: 7f49a5ca2ac953ee
+/deepseek-ai-dsh-auxiliary-text-call/model-experience/caller-framed-auxiliary-request/kv-cache-effect:
+  en: cbfa757bc35afbc7
+  zh: 3bd7074d1c354353
+/deepseek-ai-dsh-auxiliary-text-call/known-limitations-and-deferred-work:
+  en: 290b1f592e382754
+  zh: 44ba0cb08078c8d7
+/deepseek-ai-dsh-auxiliary-text-call/known-limitations-and-deferred-work/dev-note:
+  en: e67f633dc6fe7773
+  zh: 3bb0c20c93f16f98

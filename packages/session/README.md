@@ -9,7 +9,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-The session group keeps conversations durable, restores released log formats, and makes committed history available after restart. Its storage and checkpoint packages protect requests, tool side effects, and completed steps; projection packages derive client-ready values; title packages name sessions; telemetry packages report activity. Start with the shipped JSONL storage, then add checkpointing and only the projections, title policy, or telemetry your deployment needs. Each package README owns its guarantees and configuration, while a sibling query group provides independent read and tool access.
+The session group keeps conversations durable, restores released log formats, and makes committed history available after restart. Its storage and checkpoint packages protect requests, tool side effects, and completed steps; projection packages derive client-ready values; title packages name sessions; recap packages summarize what happened; telemetry packages report activity. Start with the shipped JSONL storage, then add checkpointing and only the projections, title policy, or telemetry your deployment needs. Each package README owns its guarantees and configuration, while a sibling query group provides independent read and tool access.
 
 ## Table of Contents
 
@@ -22,7 +22,7 @@ The session group keeps conversations durable, restores released log formats, an
 <a id="packages"></a>
 ## Packages
 
-The group splits into four families: durable storage (persistence seam, backends, checkpoint policy), projections, titles, and telemetry. Each package README owns its contract and configuration.
+The group splits into five families: durable storage (persistence seam, backends, checkpoint policy), projections, titles, recaps, and telemetry. Each package README owns its contract and configuration.
 
 ### Persistence
 
@@ -57,6 +57,15 @@ The group splits into four families: durable storage (persistence seam, backends
 | [`session-title-first-prompt-llm/`](session-title-first-prompt-llm/README.md) | Titles a session from its first eligible human message | registers on `ctx.sessionTitle` |
 | [`session-title-all-prompts-llm/`](session-title-all-prompts-llm/README.md) | Titles a session from all eligible human messages | registers on `ctx.sessionTitle` |
 
+### Recaps
+
+| Package | Role | ctx key |
+|---|---|---|
+| [`session-recap/`](session-recap/README.md) | Log-backed recaps of a completed stretch of work with one optional provider | `ctx.sessionRecap` |
+| [`session-recap-llm/`](session-recap-llm/README.md) | Shared model-backed recap-generation policy for the provider packages | library — no ctx key |
+| [`session-recap-idle-llm/`](session-recap-idle-llm/README.md) | Recaps a session after a completed turn sits idle | registers on `ctx.sessionRecap` |
+| [`command-recap/`](command-recap/README.md) | The on-demand `/recap` command | registers on `ctx.commands` |
+
 ### Telemetry
 
 | Package | Role | ctx key |
@@ -74,6 +83,7 @@ Only one title provider may register at a time; without one, the title service k
 - [Session persistence subsystem](../../docs/subsystems/persistence.md) — backend-neutral service semantics, the flush checkpoint, and crash recovery.
 - [Session projections subsystem](../../docs/subsystems/session-projection.md) — the projection unit contract and drive semantics.
 - [Session titles subsystem](../../docs/subsystems/session-title.md) — title eligibility, fallback, and provider flow.
+- [Session recaps subsystem](../../docs/subsystems/session-recap.md) — recap eligibility, digest selection, and provider flow.
 - [Session telemetry subsystem](../../docs/subsystems/session-telemetry.md) — capture, redaction, and delivery modes.
 - [Session subsystem](../../docs/subsystems/session.md) — the live event log every package in this group persists or derives from.
 

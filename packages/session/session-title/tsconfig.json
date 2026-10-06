@@ -31,7 +31,9 @@
     },
     {
       "path": "../../core/agent"
-
+    },
+    {
+      "path": "../../util/display-text"
     }
   ]
 }

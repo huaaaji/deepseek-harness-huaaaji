@@ -45,6 +45,10 @@ ctx.commands.register({
 
 The handler returns `success` or `error` plus optional UI text that the adapter renders. `recordInput` defaults to true; a command whose own authoritative domain event already carries the payload sets it to false so the session log does not duplicate the input. Registering the same name twice in one scope throws.
 
+### Draining in-flight invocations
+
+A command whose handler awaits real work registers through `registerDrainedCommand(ctx, definition)` instead of `ctx.commands.register()`. The helper tracks each handler promise and yields a drain disposer before the registration disposer, so composite teardown waits for already-started invocations before the command disappears. Registration through either path produces the same effective definition.
+
 ### Command syntax
 
 A command line starts with a slash at byte zero, a lowercase name containing letters, digits, `_` or `-`, and then either end-of-input or whitespace. Everything after the name — including separator whitespace — is the command's `rawInput`, and the command owns its own grammar for it. Lines that are not syntactically a command, or that name an unknown command, are rejected by the adapter instead of becoming a model prompt.

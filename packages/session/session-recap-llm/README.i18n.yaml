@@ -1,0 +1,67 @@
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write packages/session/session-recap-llm/README.md
+/:
+  en: abf4f3123441c808
+  zh: cad0b61bf859abfb
+/deepseek-ai-dsh-session-recap-llm:
+  en: 8ded0df33a3193ef
+  zh: b77235454ea3c538
+/deepseek-ai-dsh-session-recap-llm/summary:
+  en: 8dd6b76d67e393d7
+  zh: b35e7db55bc5ad89
+/deepseek-ai-dsh-session-recap-llm/table-of-contents:
+  en: d152484eb41ac6b4
+  zh: 09388d293f9be9cb
+/deepseek-ai-dsh-session-recap-llm/use-this-package:
+  en: 9e7e0421f9d72de9
+  zh: 00ffc258d770fa59
+/deepseek-ai-dsh-session-recap-llm/use-this-package/registering-a-provider:
+  en: edd3c3898cd0caa0
+  zh: 934120e84927936c
+/deepseek-ai-dsh-session-recap-llm/use-this-package/configuration:
+  en: 00098575fe182b45
+  zh: 00b49332ea45fb73
+/deepseek-ai-dsh-session-recap-llm/use-this-package/digest-selection-and-request-recording:
+  en: c985faec75403de0
+  zh: 5ca3655e3f66ec2e
+/deepseek-ai-dsh-session-recap-llm/use-this-package/failure-and-cancellation-contract:
+  en: 03839f31789ab866
+  zh: 474a0633b34917aa
+/deepseek-ai-dsh-session-recap-llm/understand-the-implementation:
+  en: aa0fd15305df90bb
+  zh: d28e3a28bb324167
+/deepseek-ai-dsh-session-recap-llm/understand-the-implementation/design-concept:
+  en: 80001c6bf6249636
+  zh: 5decb05e7aacd396
+/deepseek-ai-dsh-session-recap-llm/understand-the-implementation/source-map:
+  en: fe3b081df0e69b37
+  zh: a4ecfcf5f89b662c
+/deepseek-ai-dsh-session-recap-llm/understand-the-implementation/request-flow:
+  en: b60c536aa44ced17
+  zh: e1ec21fc851decbe
+/deepseek-ai-dsh-session-recap-llm/further-exploration:
+  en: f695f2b3453d63ec
+  zh: 703dd6743cea6b0c
+/deepseek-ai-dsh-session-recap-llm/model-experience:
+  en: 215e7ba838619b7b
+  zh: a311da3843709f90
+/deepseek-ai-dsh-session-recap-llm/model-experience/auxiliary-recap-request:
+  en: f3a4aa3f76e01d3d
+  zh: 72f49d54c68c6e78
+/deepseek-ai-dsh-session-recap-llm/model-experience/auxiliary-recap-request/what-the-model-sees:
+  en: 6a570719bcad612d
+  zh: eebf063c60aae4c7
+/deepseek-ai-dsh-session-recap-llm/model-experience/auxiliary-recap-request/token-effect:
+  en: 89f8d3088565afd2
+  zh: 31d659006b5cbf34
+/deepseek-ai-dsh-session-recap-llm/model-experience/auxiliary-recap-request/kv-cache-effect:
+  en: d429add75bf55909
+  zh: b579843236431f5a
+/deepseek-ai-dsh-session-recap-llm/known-limitations-and-deferred-work:
+  en: 70f1b3dcc587ec77
+  zh: 61d4533a9b8ee912
+/deepseek-ai-dsh-session-recap-llm/known-limitations-and-deferred-work/dev-note:
+  en: e67f633dc6fe7773
+  zh: 3bb0c20c93f16f98

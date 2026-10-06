@@ -1,0 +1,64 @@
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write packages/session/session-recap-idle-llm/README.md
+/:
+  en: 6703e4e31e12c940
+  zh: 4798b82200158894
+/deepseek-ai-dsh-session-recap-idle-llm:
+  en: f2fe2deadfa4ec1a
+  zh: 5bdd5607ad26632d
+/deepseek-ai-dsh-session-recap-idle-llm/summary:
+  en: 2be540774779cf69
+  zh: a4c439bb66c5892f
+/deepseek-ai-dsh-session-recap-idle-llm/table-of-contents:
+  en: d152484eb41ac6b4
+  zh: 09388d293f9be9cb
+/deepseek-ai-dsh-session-recap-idle-llm/use-this-package:
+  en: 285641035f4acf22
+  zh: 684e51f5bb4da0f1
+/deepseek-ai-dsh-session-recap-idle-llm/use-this-package/when-recaps-are-generated:
+  en: 0dbba3f6e20756bf
+  zh: 2718732e722a5351
+/deepseek-ai-dsh-session-recap-idle-llm/use-this-package/configuration:
+  en: 2fb4a888756972ed
+  zh: 84ea95e2bd8ba048
+/deepseek-ai-dsh-session-recap-idle-llm/use-this-package/failures-and-recovery:
+  en: c8743b13d2d0fef2
+  zh: 8f3108753464f9a9
+/deepseek-ai-dsh-session-recap-idle-llm/understand-the-implementation:
+  en: 506933ffa7745b7d
+  zh: c4a79e210a36758d
+/deepseek-ai-dsh-session-recap-idle-llm/understand-the-implementation/design-concept:
+  en: 646f44a0e46a16d9
+  zh: d77f9a316b245c23
+/deepseek-ai-dsh-session-recap-idle-llm/understand-the-implementation/source-map:
+  en: 8524912facdce3b8
+  zh: d9b1aaaa2277d120
+/deepseek-ai-dsh-session-recap-idle-llm/understand-the-implementation/scheduling:
+  en: 86db71095e084a84
+  zh: 52a6f421eb648557
+/deepseek-ai-dsh-session-recap-idle-llm/further-exploration:
+  en: fec0136dcc25e8e5
+  zh: 4bd171030595f4b5
+/deepseek-ai-dsh-session-recap-idle-llm/model-experience:
+  en: 215e7ba838619b7b
+  zh: a311da3843709f90
+/deepseek-ai-dsh-session-recap-idle-llm/model-experience/automatic-idle-recap-request:
+  en: c7481e3a9dcbed75
+  zh: de552fcf77fbc73b
+/deepseek-ai-dsh-session-recap-idle-llm/model-experience/automatic-idle-recap-request/what-the-model-sees:
+  en: 1add4787851460a0
+  zh: 957e4194e76656a3
+/deepseek-ai-dsh-session-recap-idle-llm/model-experience/automatic-idle-recap-request/token-effect:
+  en: 3a5712b8c1509d71
+  zh: 68e7ef3dfcd52b96
+/deepseek-ai-dsh-session-recap-idle-llm/model-experience/automatic-idle-recap-request/kv-cache-effect:
+  en: a869290a0df2f4cc
+  zh: 85c742b97859b97c
+/deepseek-ai-dsh-session-recap-idle-llm/known-limitations-and-deferred-work:
+  en: c49467a915ece1e3
+  zh: 2834edd925bab724
+/deepseek-ai-dsh-session-recap-idle-llm/known-limitations-and-deferred-work/dev-note:
+  en: e67f633dc6fe7773
+  zh: 3bb0c20c93f16f98

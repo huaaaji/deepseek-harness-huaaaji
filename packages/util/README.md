@@ -41,6 +41,7 @@ Each package provides one primitive; open a package page for how to use it.
 | [`workspace-path/`](workspace-path/README.md) | Provides browser-safe Workspace path and display helpers |
 | [`code-language/`](code-language/README.md) | Maps a filename suffix to the syntax-highlighting language that the Code preview, diff review, and the read card render |
 | [`output-retention/`](output-retention/README.md) | Bounds model-facing output and reports exact omission metadata |
+| [`display-text/`](display-text/README.md) | Removes terminal controls and invisible characters from untrusted display text and bounds it to a UTF-8 byte budget |
 | [`time/`](time/README.md) | Validates and canonicalizes a caller-reported IANA time zone |
 | [`timeout/`](timeout/README.md) | Deadline arithmetic, signal fusion, and timeout-versus-cancel classification |
 

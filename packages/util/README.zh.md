@@ -41,6 +41,7 @@ kind: "package-group"
 | [`workspace-path/`](workspace-path/README.zh.md) | 提供浏览器安全的 Workspace 路径与显示辅助函数 |
 | [`code-language/`](code-language/README.zh.md) | 把文件名后缀映射为 Code 预览、diff 审阅与 read 卡片所渲染的语法高亮语言 |
 | [`output-retention/`](output-retention/README.zh.md) | 限制面向模型的输出并报告精确的省略元数据 |
+| [`display-text/`](display-text/README.zh.md) | 从不可信显示文本中移除终端控制字符与不可见字符，并按 UTF-8 字节预算限制长度 |
 | [`time/`](time/README.zh.md) | 校验并规范化调用方所报的 IANA 时区 |
 | [`timeout/`](timeout/README.zh.md) | 截止时间运算、信号融合与超时和取消分类 |
 

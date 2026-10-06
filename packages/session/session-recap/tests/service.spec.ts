@@ -120,7 +120,7 @@ describe('SessionRecapService digest and acceptance', () => {
       return {
         text: '\u001B[31mShipped the recap seam\u001B[0m and wired the command',
         sourceSeqs: [first.seq],
-        model: request.route,
+        ...(request.route === undefined ? {} : { model: request.route }),
       }
     }))
     const session = ctx.sessions.create(SessionId('digest'))
@@ -287,8 +287,11 @@ describe('SessionRecapService digest and acceptance', () => {
     startTurn(session, 1)
     prompt(session, 'Work')
     await expect(ctx.sessionRecap.generate(session)).rejects.toMatchObject({ code: 'generation' })
-    const failure = await ctx.sessionRecap.generate(session).catch((error: unknown) => error as Error)
-    expect(failure.message).toContain('model exploded')
+    const failure: unknown = await ctx.sessionRecap.generate(session).then(
+      () => { throw new Error('expected the recap to fail') },
+      (error: unknown) => error,
+    )
+    expect(String(failure)).toContain('model exploded')
 
     const ordered = await setup()
     ordered.sessionRecap.register(providerOf(async request => ({
@@ -340,7 +343,7 @@ describe('SessionRecapService lifecycle', () => {
   it('validates provider registrations and replaces a disposed registration', async () => {
     const ctx = await setup()
     expect(() => ctx.sessionRecap.register(null as never)).toThrow(/provider must be an object/)
-    expect(() => ctx.sessionRecap.register({ id: '', generate: async () => ({ text: 'x', sourceSeqs: [] }) }))
+    expect(() => ctx.sessionRecap.register({ id: '', generate: async () => ({ text: 'x', sourceSeqs: [] }) } as never))
       .toThrow(/provider id must be a non-empty string/)
     expect(() => ctx.sessionRecap.register({ id: SessionRecapProviderId('x') } as never))
       .toThrow(/requires generate\(\)/)

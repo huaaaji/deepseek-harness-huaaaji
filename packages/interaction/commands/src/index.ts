@@ -530,4 +530,35 @@ async function admitCommandAttachments(
   return Object.freeze(blocks)
 }
 
+/**
+ * Register one human command whose already-started invocations settle before
+ * its registration is released. Composite teardown is LIFO, so the drain
+ * disposer yields before the registration disposer and no new invocation can
+ * enter while earlier handler promises quiesce.
+ *
+ * @param ctx - context exposing the command registry.
+ * @param definition - the command to register; its handler's returned promise is tracked per invocation.
+ * @returns the exact Cordis effect disposer that drains in-flight invocations before unregistering.
+ */
+export function registerDrainedCommand(
+  ctx: Context,
+  definition: CommandDefinition,
+): () => Promise<void> {
+  const active = new Set<Promise<CommandResult>>()
+  const handler = (invocation: CommandInvocation): Promise<CommandResult> => {
+    const operation = Promise.resolve(definition.handler(invocation))
+    active.add(operation)
+    const retire = (): void => { active.delete(operation) }
+    // Both branches retire without rethrowing, so the derived observer promise
+    // cannot become an unhandled mirror of an expected handler rejection.
+    void operation.then(retire, retire)
+    return operation
+  }
+
+  return ctx.effect(function* () {
+    yield async () => { await Promise.allSettled(active) }
+    yield ctx.commands.register({ ...definition, handler })
+  }, `commands.registerDrained(${definition.name})`)
+}
+
 export default CommandRuntime

@@ -2705,6 +2705,45 @@ export type JournalMode = 'wal' | 'delete' | 'truncate' | 'persist'
 ```
 <!-- END GENERATED config-catalog:@deepseek-ai/dsh-session-query-sqlite -->
 
+<!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-session-recap -->
+<a id="deepseek-aidsh-session-recap"></a>
+
+## `@deepseek-ai/dsh-session-recap`
+
+- `inject`: `sessions`
+- `source`: [`packages/session/session-recap/src/index.ts:47`](../packages/session/session-recap/src/index.ts)
+
+```ts config-catalog
+/** Required accepted-text and digest-entry limits. */
+export interface Config {
+  /** Maximum UTF-8 bytes in any accepted recap text. */
+  readonly maxBytes: number
+  /** Maximum UTF-8 bytes in one digest entry. */
+  readonly maxEntryBytes: number
+}
+```
+<!-- END GENERATED config-catalog:@deepseek-ai/dsh-session-recap -->
+
+<!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-session-recap-idle-llm -->
+<a id="deepseek-aidsh-session-recap-idle-llm"></a>
+
+## `@deepseek-ai/dsh-session-recap-idle-llm`
+
+- `inject`: `sessionRecap` · `llm` · `sessions`
+- `refs`: [`SessionRecapLlmConfig`](../packages/session/session-recap-llm/src/index.ts)
+- `source`: [`packages/session/session-recap-idle-llm/src/index.ts:22`](../packages/session/session-recap-idle-llm/src/index.ts)
+
+```ts config-catalog
+/** Required idle cadence plus the shared generation policy. */
+export interface Config extends SessionRecapLlmConfig {
+  /** Idle delay after a completed turn before an automatic recap is generated. */
+  readonly minIdleMs: number
+  /** Completed turns a session must have before an automatic recap is generated. */
+  readonly minTurns: number
+}
+```
+<!-- END GENERATED config-catalog:@deepseek-ai/dsh-session-recap-idle-llm -->
+
 <!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-session-reference -->
 <a id="deepseek-aidsh-session-reference"></a>
 
@@ -4404,6 +4443,7 @@ These load from a `cordis.yml` entry with no `config:` block; they declare no co
 | `@deepseek-ai/dsh-command-compact` | `commands` · `compaction` | [`packages/compaction/command-compact/src/index.ts`](../packages/compaction/command-compact/src/index.ts) |
 | `@deepseek-ai/dsh-command-feedback` | `commands` | [`packages/feedback/command-feedback/src/index.ts`](../packages/feedback/command-feedback/src/index.ts) |
 | `@deepseek-ai/dsh-command-goal` | `commands` · `goals` | [`packages/goal/command-goal/src/index.ts`](../packages/goal/command-goal/src/index.ts) |
+| `@deepseek-ai/dsh-command-recap` | `commands` · `sessionRecap` | [`packages/session/command-recap/src/index.ts`](../packages/session/command-recap/src/index.ts) |
 | `@deepseek-ai/dsh-commands` | — | [`packages/interaction/commands/src/index.ts`](../packages/interaction/commands/src/index.ts) |
 | `@deepseek-ai/dsh-compaction-image-offload` | `agents` · `sessions` | [`packages/compaction/compaction-image-offload/src/index.ts`](../packages/compaction/compaction-image-offload/src/index.ts) |
 | `@deepseek-ai/dsh-computer-use` | — | [`packages/computer-use/computer-use/src/index.ts`](../packages/computer-use/computer-use/src/index.ts) |
@@ -4483,6 +4523,7 @@ Imported as libraries by other packages; a `cordis.yml` cannot load them.
 | `@deepseek-ai/dsh-anonymous-user-id` | — | [`packages/identity/anonymous-user-id/src/index.ts`](../packages/identity/anonymous-user-id/src/index.ts) |
 | `@deepseek-ai/dsh-app-boot` | — | [`packages/boot/app-boot/src/index.ts`](../packages/boot/app-boot/src/index.ts) |
 | `@deepseek-ai/dsh-atomic-write` | — | [`packages/util/atomic-write/src/index.ts`](../packages/util/atomic-write/src/index.ts) |
+| `@deepseek-ai/dsh-auxiliary-text-call` | — | [`packages/llm/auxiliary-text-call/src/index.ts`](../packages/llm/auxiliary-text-call/src/index.ts) |
 | `@deepseek-ai/dsh-base` | — | [`packages/bundle/base/src/index.ts`](../packages/bundle/base/src/index.ts) |
 | `@deepseek-ai/dsh-brand` | — | [`packages/util/brand/src/index.ts`](../packages/util/brand/src/index.ts) |
 | `@deepseek-ai/dsh-chunked-list` | — | [`packages/util/chunked-list/src/index.ts`](../packages/util/chunked-list/src/index.ts) |
@@ -4494,6 +4535,7 @@ Imported as libraries by other packages; a `cordis.yml` cannot load them.
 | `@deepseek-ai/dsh-client-web` | — | [`packages/client/web/src/index.ts`](../packages/client/web/src/index.ts) |
 | `@deepseek-ai/dsh-cmdline` | — | [`packages/boot/cmdline/src/index.ts`](../packages/boot/cmdline/src/index.ts) |
 | `@deepseek-ai/dsh-deque` | — | [`packages/util/deque/src/index.ts`](../packages/util/deque/src/index.ts) |
+| `@deepseek-ai/dsh-display-text` | — | [`packages/util/display-text/src/index.ts`](../packages/util/display-text/src/index.ts) |
 | `@deepseek-ai/dsh-experimental-agent-team-profile` | — | [`packages/experimental/agent-team-profile/src/index.ts`](../packages/experimental/agent-team-profile/src/index.ts) |
 | `@deepseek-ai/dsh-experimental-browser-use-runtime` | — | [`packages/experimental/browser-use-runtime/src/index.ts`](../packages/experimental/browser-use-runtime/src/index.ts) |
 | `@deepseek-ai/dsh-experimental-inspector-profile` | — | [`packages/experimental/inspector-profile/src/index.ts`](../packages/experimental/inspector-profile/src/index.ts) |
@@ -4523,6 +4565,7 @@ Imported as libraries by other packages; a `cordis.yml` cannot load them.
 | `@deepseek-ai/dsh-session-format-v1-to-v2` | — | [`packages/session/session-format-v1-to-v2/src/index.ts`](../packages/session/session-format-v1-to-v2/src/index.ts) |
 | `@deepseek-ai/dsh-session-format-v2-to-v3` | — | [`packages/session/session-format-v2-to-v3/src/index.ts`](../packages/session/session-format-v2-to-v3/src/index.ts) |
 | `@deepseek-ai/dsh-session-format-v3-to-v4` | — | [`packages/session/session-format-v3-to-v4/src/index.ts`](../packages/session/session-format-v3-to-v4/src/index.ts) |
+| `@deepseek-ai/dsh-session-recap-llm` | — | [`packages/session/session-recap-llm/src/index.ts`](../packages/session/session-recap-llm/src/index.ts) |
 | `@deepseek-ai/dsh-session-snapshot` | — | [`packages/test-support/session-snapshot/src/index.ts`](../packages/test-support/session-snapshot/src/index.ts) |
 | `@deepseek-ai/dsh-session-telemetry` | — | [`packages/session/session-telemetry/src/index.ts`](../packages/session/session-telemetry/src/index.ts) |
 | `@deepseek-ai/dsh-session-title-llm` | — | [`packages/session/session-title-llm/src/index.ts`](../packages/session/session-title-llm/src/index.ts) |

@@ -3,6 +3,7 @@ import type {
   ConversationLocation, ConversationViewNode, ModelRetryNode, RunningToolCall,
   ToolCallBlock,
 } from '@deepseek-ai/dsh-client-ui-conversation/client'
+import type { SessionRecapSource, SessionRecapTurnRange } from '@deepseek-ai/dsh-session-recap/types'
 
 /** Final Chat render unit produced by a Chat business Definition. */
 export interface ChatConversationViewNode extends ConversationViewNode {
@@ -51,6 +52,20 @@ export interface ToolChatData {
 export interface ManualCompactionChatData {
   readonly command: CommandNode
   readonly compaction: CompactionSummaryNode | null
+}
+
+/** One accepted session recap row payload: its text and the work it covers. */
+export interface RecapChatData {
+  /** Seq of the accepted `session/recap` event. */
+  readonly seq: number
+  /** Time of the accepted `session/recap` event. */
+  readonly time: number
+  /** Recap text, already normalized to one byte-capped line. */
+  readonly text: string
+  /** Which provider produced the text. */
+  readonly source: SessionRecapSource
+  /** Inclusive turns the digest covered. */
+  readonly turnRange: SessionRecapTurnRange
 }
 
 /** One durable retry chain rendered as a single row. */

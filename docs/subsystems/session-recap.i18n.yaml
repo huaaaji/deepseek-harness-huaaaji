@@ -1,0 +1,19 @@
+# Bilingual-pair consistency record for session-recap.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write docs/subsystems/session-recap.md
+/session-recaps:
+  en: f9b57fc13bb7a0f6
+  zh: f58d96bfd0b384c0
+/session-recaps/durable-recap-state:
+  en: bff4984d4d5d0406
+  zh: 48059933e9c68ddc
+/session-recaps/the-covered-digest:
+  en: f61ad279f2399ea4
+  zh: cbcf3fa8a05c4f2e
+/session-recaps/auxiliary-request-record:
+  en: b3c551f8827a39b7
+  zh: cdb0badcaf6d8ac2
+/session-recaps/provider-input-and-output:
+  en: ebcd67916b1aff9b
+  zh: 9e09c70911d208bb
