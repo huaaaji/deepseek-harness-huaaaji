@@ -1,0 +1,40 @@
+# Bilingual-pair consistency record for 2026-10-07-session-recap.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/proposed/feature/2026-10-07-session-recap.md
+/agent-note-session-recap-a-durable-account-of-what-happened-while-the-user-was-away:
+  en: 82424fe7efb1c05b
+  zh: 94aa8bd37f88c16c
+/agent-note-session-recap-a-durable-account-of-what-happened-while-the-user-was-away/problem:
+  en: b2a3ee6414dbb905
+  zh: f5a4469116cc6bb9
+/agent-note-session-recap-a-durable-account-of-what-happened-while-the-user-was-away/proposal:
+  en: 4029dda540c241dd
+  zh: f5d1420b933b2e87
+/agent-note-session-recap-a-durable-account-of-what-happened-while-the-user-was-away/proposal/event-and-seam:
+  en: 6c6f261756e2823d
+  zh: 13dbdacb1394f551
+/agent-note-session-recap-a-durable-account-of-what-happened-while-the-user-was-away/proposal/generation:
+  en: 5e0285126c55e3ec
+  zh: 1df6db8d1350ab3b
+/agent-note-session-recap-a-durable-account-of-what-happened-while-the-user-was-away/proposal/trigger:
+  en: a0948e685b5f1e32
+  zh: 340f4e7d1528cbc5
+/agent-note-session-recap-a-durable-account-of-what-happened-while-the-user-was-away/proposal/client-presentation:
+  en: da226a60f509bf88
+  zh: f6cbc6b2e17cf402
+/agent-note-session-recap-a-durable-account-of-what-happened-while-the-user-was-away/proposal/persistence-routing-and-cost:
+  en: 7de4f93c5153d924
+  zh: 947cb83f4310b591
+/agent-note-session-recap-a-durable-account-of-what-happened-while-the-user-was-away/proposal/packaging:
+  en: e79cd8495d6ec5d6
+  zh: b9e44856d2af292d
+/agent-note-session-recap-a-durable-account-of-what-happened-while-the-user-was-away/alternatives-considered:
+  en: a0d5a2cb452bc6ef
+  zh: 29ce593d11ac1bbe
+/agent-note-session-recap-a-durable-account-of-what-happened-while-the-user-was-away/acceptance-criteria:
+  en: 363352f14de85194
+  zh: de81a1be54d24ae1
+/agent-note-session-recap-a-durable-account-of-what-happened-while-the-user-was-away/risks:
+  en: ff29b8fed9c22477
+  zh: 92b447fa5f8696c4
